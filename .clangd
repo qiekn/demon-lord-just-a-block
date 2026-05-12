@@ -1,0 +1,14 @@
+# clangd configuration
+# https://clangd.llvm.org/config
+#
+# compile_commands.json lives under build/ after the first CMake configure.
+# clangd auto-discovers it; we only need to ensure C++23 / libc++ are set
+# for the .cpp / .cppm units it analyzes.
+
+If:
+  PathMatch: [.*\.cpp, .*\.cppm]
+
+CompileFlags:
+  Add:
+    - -std=c++23
+    - -stdlib=libc++

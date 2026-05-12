@@ -1,0 +1,10 @@
+[submodule "deps/Raylib-Hpp"]
+	path = deps/Raylib-Hpp
+	url = https://github.com/qiekn/Raylib-Hpp.git
+[submodule "deps/imgui"]
+	path = deps/imgui
+	url = https://github.com/ocornut/imgui.git
+	branch = docking
+[submodule "deps/entt"]
+	path = deps/entt
+	url = https://github.com/skypjack/entt.git
