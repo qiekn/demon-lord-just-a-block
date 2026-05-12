@@ -1,6 +1,8 @@
 add_executable(block
   main.cpp
+  application.cpp
   assets.cpp
+  game_layer.cpp
   imgui_layer.cpp
   log.cpp
   window_state.cpp
@@ -13,7 +15,11 @@ target_link_libraries(block PRIVATE
   spdlog_headers
 )
 
+# Application/ImGuiLayer use raylib's bundled GLFW (glfwGetCurrentContext)
+# and raylib's C headers directly; main.cpp goes through `import raylib;`
+# instead. Both paths coexist in distinct TUs.
 target_include_directories(block PRIVATE
+  ${CMAKE_SOURCE_DIR}/deps/Raylib-Hpp/refs/raylib/src
   ${CMAKE_SOURCE_DIR}/deps/Raylib-Hpp/refs/raylib/src/external/glfw/include
 )
 

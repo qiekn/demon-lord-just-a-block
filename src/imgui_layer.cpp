@@ -12,10 +12,7 @@ namespace block {
 
 namespace {
 
-// Hazel-style dark theme, ported from ck-engine's ImGuiLayer. Color tuples
-// describe widget category triples (resting / hovered / active) so each
-// state stays a small step from the base. WindowBg sets the canvas tone;
-// Tab and Title overrides keep the docking chrome consistent.
+// Hazel-style dark theme, ported from ck-engine's ImGuiLayer.
 void ApplyDarkTheme() {
   auto& colors = ImGui::GetStyle().Colors;
   colors[ImGuiCol_WindowBg] = ImVec4{0.1f, 0.105f, 0.11f, 1.0f};
@@ -54,9 +51,6 @@ void ImGuiLayer::OnAttach() {
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
   io.IniFilename = "imgui.ini";
 
-  // NotoSansSC covers CJK; rebake at dpi-scaled size so HiDPI displays
-  // don't show blurry text. GetWindowScaleDPI() returns the active scale
-  // from GLFW; raylib's FLAG_WINDOW_HIGHDPI must already be set.
   const float dpi = ::GetWindowScaleDPI().x;
   ImFontConfig cfg;
   cfg.OversampleH = 2;
@@ -71,7 +65,6 @@ void ImGuiLayer::OnAttach() {
   style.ScaleAllSizes(dpi);
   ApplyDarkTheme();
 
-  // raylib is already the current GLFW context after InitWindow.
   GLFWwindow* window = glfwGetCurrentContext();
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init("#version 330");
@@ -83,19 +76,15 @@ void ImGuiLayer::OnDetach() {
   ImGui::DestroyContext();
 }
 
-void ImGuiLayer::Begin() {
+void ImGuiLayer::OnImGuiBegin() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 }
 
-void ImGuiLayer::End() {
+void ImGuiLayer::OnImGuiEnd() {
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
-
-void ImGuiLayer::DrawDemo(bool* p_open) {
-  if (p_open && *p_open) ImGui::ShowDemoWindow(p_open);
 }
 
 }  // namespace block
