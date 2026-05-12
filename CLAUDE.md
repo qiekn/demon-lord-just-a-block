@@ -50,7 +50,7 @@ Clang 21 + libc++ rejects mixing `import std;` with traditional `#include <forma
 
 **Project rule:** project-internal headers (e.g. `src/log.hpp`) that callers include from a TU using `import std;` must be std-header-free. Use one of these escape hatches when the API would naturally want std types:
 
-- **Macros that expand `std::format` at the call site.** `src/log.hpp` is the canonical example: it declares only `void log::Info(const char*)` etc., and ships `BLOCK_LOG_*` macros that expand to `::block::log::Info(::std::format(...).c_str())`. The caller's TU is responsible for having `std::format` in scope (via `import std;`).
+- **Macros that expand `std::format` at the call site.** `src/log.hpp` is the canonical example: it declares only `void log::Info(const char*)` etc., and ships `CK_LOG_*` macros that expand to `::ck::log::Info(::std::format(...).c_str())`. The caller's TU is responsible for having `std::format` in scope (via `import std;`).
 - **Opaque interfaces / PIMPL.** Public headers take POD types (`const char*`, ints, raw pointers) and hide std containers in the .cpp via `struct Impl;`.
 - **Local non-`import-std` TUs.** Files like `src/imgui_layer.cpp` and `src/application.cpp` use plain `#include <vector>` etc. and never `import std;`. They can pull in any headers they like; main.cpp just stays away from those headers itself.
 
@@ -61,12 +61,12 @@ If you find yourself adding `#include <format>`, `#include <ranges>`, etc. to a 
 ```cpp
 #include "log.hpp"
 
-block::Log::Init();              // call once at startup
-block::log::Info("Block ready"); // const char* (no format args)
-BLOCK_LOG_INFO("frame {:.2f} ms", dt * 1000.0f);  // formatted
+ck::Log::Init();              // call once at startup
+ck::log::Info("Block ready"); // const char* (no format args)
+CK_LOG_INFO("frame {:.2f} ms", dt * 1000.0f);  // formatted
 ```
 
-Levels: `BLOCK_LOG_{TRACE,DEBUG,INFO,WARN,ERROR,FATAL}` and the matching `block::log::*` plain-string functions. Both route to a single shared spdlog stdout-color sink. Pattern: `[HH:MM:SS] [level] msg`. Default level is `trace`.
+Levels: `CK_LOG_{TRACE,DEBUG,INFO,WARN,ERROR,FATAL}` and the matching `ck::log::*` plain-string functions. Both route to a single shared spdlog stdout-color sink. Pattern: `[HH:MM:SS] [level] msg`. Default level is `trace`.
 
 ## Window State
 
@@ -76,13 +76,13 @@ Levels: `BLOCK_LOG_{TRACE,DEBUG,INFO,WARN,ERROR,FATAL}` and the matching `block:
 
 **Current** (top-down, all under `src/`):
 
-- `main.cpp` — entry point. `import std;` + `import raylib;`. Initializes `block::Log`, creates `block::Application`, loads the default font, pushes layers, runs.
-- `application.hpp/cpp` — `block::Application` owns the raylib window and the `LayerStack`. Window geometry is loaded/saved through `window_state.hpp/cpp`. ApplicationSpec carries name/size/fps/dpi.
-- `layer.hpp` — `block::Layer` base with `OnAttach / OnDetach / OnUpdate(dt) / OnRender / OnImGuiRender / OnImGuiBegin / OnImGuiEnd`. Std-free header so consumers can `import std;` freely.
+- `main.cpp` — entry point. `import std;` + `import raylib;`. Initializes `ck::Log`, creates `ck::Application`, loads the default font, pushes layers, runs.
+- `application.hpp/cpp` — `ck::Application` owns the raylib window and the `LayerStack`. Window geometry is loaded/saved through `window_state.hpp/cpp`. ApplicationSpec carries name/size/fps/dpi.
+- `layer.hpp` — `ck::Layer` base with `OnAttach / OnDetach / OnUpdate(dt) / OnRender / OnImGuiRender / OnImGuiBegin / OnImGuiEnd`. Std-free header so consumers can `import std;` freely.
 - `imgui_layer.hpp/cpp` — overlay derived from `Layer`. Owns the ImGui context + the `imgui_impl_glfw` + `imgui_impl_opengl3` backends. Overrides `OnImGuiBegin/End` to bracket the frame around every other layer's `OnImGuiRender`. raylib uses GLFW + GL 3.3 internally on PLATFORM_DESKTOP, so the backend grabs the active context via `glfwGetCurrentContext()` after `InitWindow`.
 - `log.hpp/cpp` — spdlog-backed logger. See "Logging" above.
 - `window_state.hpp/cpp` — `x y w h` persistence. See "Window State" above.
-- `assets.hpp` — `BLOCK_ASSET("rel/path")` compile-time macro that prefixes with `assets/`, plus a runtime `block::AssetPath()` for paths built from dynamic strings.
+- `assets.hpp` — `CK_ASSET("rel/path")` compile-time macro that prefixes with `assets/`, plus a runtime `ck::AssetPath()` for paths built from dynamic strings.
 
 **Planned** (not yet implemented):
 
@@ -130,7 +130,7 @@ Two directories with distinct roles:
 - `cmake/` — `EnableCxxImportStd.cmake` only.
 - `src/` — game source. Engine modules (layer/application/log/window_state/assets/imgui_layer) live alongside `main.cpp`. Add new layers (e.g. game logic) as additional `*_layer.{hpp,cpp}` files.
 - `deps/` — submodules + `CMakeLists.txt` wiring.
-- `assets/` — runtime assets (committed). Reach into via `BLOCK_ASSET("...")` from `src/assets.hpp`.
+- `assets/` — runtime assets (committed). Reach into via `CK_ASSET("...")` from `src/assets.hpp`.
 - `export/` — Unity asset dump (local only, gitignored).
 - `docs/` — mdBook scaffold for design notes (separate from this guide).
 

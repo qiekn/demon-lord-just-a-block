@@ -2,7 +2,7 @@
 
 #include "layer.hpp"
 
-namespace block {
+namespace ck {
 
 // Overlay that owns the ImGui context + glfw/opengl3 backends. Brackets each
 // frame via OnImGuiBegin/End so other layers can drop ImGui windows in their
@@ -18,4 +18,4 @@ class ImGuiLayer : public Layer {
   void OnImGuiEnd() override;
 };
 
-}  // namespace block
+}  // namespace ck

@@ -11,7 +11,7 @@
 #include "log.hpp"
 #include "window_state.hpp"
 
-namespace block {
+namespace ck {
 
 namespace {
 
@@ -128,4 +128,4 @@ void Application::Run() {
 
 void Application::Close() { state_->running = false; }
 
-}  // namespace block
+}  // namespace ck

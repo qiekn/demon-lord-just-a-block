@@ -3,7 +3,7 @@
 #include <imgui.h>
 #include <raylib.h>
 
-namespace block {
+namespace ck {
 
 void GameLayer::OnRender() {
   const char* title = "Block · 方块";
@@ -17,4 +17,4 @@ void GameLayer::OnImGuiRender() {
   if (show_demo_) ImGui::ShowDemoWindow(&show_demo_);
 }
 
-}  // namespace block
+}  // namespace ck

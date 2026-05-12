@@ -5,7 +5,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-namespace block {
+namespace ck {
 
 namespace {
 
@@ -31,4 +31,4 @@ void Error(const char* msg) { g_logger->error(msg); }
 void Fatal(const char* msg) { g_logger->critical(msg); }
 
 }  // namespace log
-}  // namespace block
+}  // namespace ck

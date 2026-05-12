@@ -3,11 +3,11 @@
 // Logger. Backed by spdlog inside log.cpp. The header takes only POD types
 // (no <format>/<string_view>) so TUs that mix `import std;` with `#include
 // "log.hpp"` don't end up redeclaring std symbols — clang+libc++ rejects
-// that combination loudly. Use the BLOCK_LOG_* macros for std::format-style
+// that combination loudly. Use the CK_LOG_* macros for std::format-style
 // call sites; the macros expand inside the caller's TU where `std::format`
 // is already in scope (via `import std;`).
 
-namespace block {
+namespace ck {
 
 class Log {
  public:
@@ -24,11 +24,11 @@ void Error(const char* msg);
 void Fatal(const char* msg);
 
 }  // namespace log
-}  // namespace block
+}  // namespace ck
 
-#define BLOCK_LOG_TRACE(...) ::block::log::Trace(::std::format(__VA_ARGS__).c_str())
-#define BLOCK_LOG_DEBUG(...) ::block::log::Debug(::std::format(__VA_ARGS__).c_str())
-#define BLOCK_LOG_INFO(...) ::block::log::Info(::std::format(__VA_ARGS__).c_str())
-#define BLOCK_LOG_WARN(...) ::block::log::Warn(::std::format(__VA_ARGS__).c_str())
-#define BLOCK_LOG_ERROR(...) ::block::log::Error(::std::format(__VA_ARGS__).c_str())
-#define BLOCK_LOG_FATAL(...) ::block::log::Fatal(::std::format(__VA_ARGS__).c_str())
+#define CK_LOG_TRACE(...) ::ck::log::Trace(::std::format(__VA_ARGS__).c_str())
+#define CK_LOG_DEBUG(...) ::ck::log::Debug(::std::format(__VA_ARGS__).c_str())
+#define CK_LOG_INFO(...) ::ck::log::Info(::std::format(__VA_ARGS__).c_str())
+#define CK_LOG_WARN(...) ::ck::log::Warn(::std::format(__VA_ARGS__).c_str())
+#define CK_LOG_ERROR(...) ::ck::log::Error(::std::format(__VA_ARGS__).c_str())
+#define CK_LOG_FATAL(...) ::ck::log::Fatal(::std::format(__VA_ARGS__).c_str())

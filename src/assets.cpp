@@ -2,7 +2,7 @@
 
 #include <cstdio>
 
-namespace block {
+namespace ck {
 
 const char* AssetPath(const char* rel) {
   thread_local char buf[512];
@@ -10,4 +10,4 @@ const char* AssetPath(const char* rel) {
   return buf;
 }
 
-}  // namespace block
+}  // namespace ck

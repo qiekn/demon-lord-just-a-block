@@ -2,7 +2,7 @@
 
 #include <cstdio>
 
-namespace block {
+namespace ck {
 
 WindowState LoadWindowState(const char* path) {
   WindowState s;
@@ -23,4 +23,4 @@ void SaveWindowState(const char* path, const WindowState& s) {
   }
 }
 
-}  // namespace block
+}  // namespace ck

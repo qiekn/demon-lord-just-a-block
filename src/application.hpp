@@ -4,7 +4,7 @@
 // header without dragging conflicting std decls. Internal state (LayerStack,
 // std containers) is hidden via PImpl in application.cpp.
 
-namespace block {
+namespace ck {
 
 class Layer;
 
@@ -37,4 +37,4 @@ class Application {
   State* state_;
 };
 
-}  // namespace block
+}  // namespace ck

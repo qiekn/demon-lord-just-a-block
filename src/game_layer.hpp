@@ -2,7 +2,7 @@
 
 #include "layer.hpp"
 
-namespace block {
+namespace ck {
 
 // Placeholder gameplay layer: renders the title text and an ImGui demo window
 // so we can see something on-screen while the engine matures. Real gameplay
@@ -18,4 +18,4 @@ class GameLayer : public Layer {
   bool show_demo_ = true;
 };
 
-}  // namespace block
+}  // namespace ck

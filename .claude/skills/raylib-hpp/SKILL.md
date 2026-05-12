@@ -52,7 +52,7 @@ All GPU resources are CRTP-derived from `Resource<Derived, Handle>`
 - `explicit operator bool()` delegates to `Valid()`.
 
 ```cpp
-ck::raii::Texture tex(BLOCK_ASSET("sprites/player.png"));
+ck::raii::Texture tex(CK_ASSET("sprites/player.png"));
 if (!tex) { /* load failed */ }
 tex.SetFilter(TEXTURE_FILTER_BILINEAR).DrawV({100, 100});  // member chaining
 ::DrawTextureV(tex.Get(), {100, 100}, WHITE);              // raw handle if needed
@@ -60,7 +60,7 @@ tex.SetFilter(TEXTURE_FILTER_BILINEAR).DrawV({100, 100});  // member chaining
 
 **`ck::raii::Window` is special:** non-copyable AND non-movable, by design.
 A single GL context. GPU resources (textures, shaders, render targets) must
-not outlive the window — declare the `Window` (or `block::Application`,
+not outlive the window — declare the `Window` (or `ck::Application`,
 which owns one) first, then any resources, and let normal scope order tear
 them down in reverse.
 
@@ -150,7 +150,7 @@ This is the wider project rule (see root `CLAUDE.md`), restated for context:
 Clang 21 + libc++ rejects mixing `import std;` with traditional
 `#include <format>` (and other heavy std headers) in the same TU.
 
-This is why `src/log.hpp` is std-free and ships `BLOCK_LOG_*` macros that
+This is why `src/log.hpp` is std-free and ships `CK_LOG_*` macros that
 expand `std::format(...)` at the call site. Raylib-Hpp itself is fine to
 `#include` from an `import std;` TU because its headers stick to `<string>`,
 `<span>`, `<format>` only inside `.hpp` files that are not transitively
@@ -170,9 +170,9 @@ import raylib;
 using namespace ck;
 using namespace ck::raii;
 
-block::Application app{{.name = "Block"}};   // owns the Window
-auto codepoints = LoadCodepoints(ReadFile(BLOCK_ASSET("zh-sc-3500.txt")));
-Font noto(BLOCK_ASSET("fonts/NotoSansSC-Regular.ttf"), 64, codepoints);
+ck::Application app{{.name = "Block"}};   // owns the Window
+auto codepoints = LoadCodepoints(ReadFile(CK_ASSET("zh-sc-3500.txt")));
+Font noto(CK_ASSET("fonts/NotoSansSC-Regular.ttf"), 64, codepoints);
 SetTextureFilter(noto.Get().texture, TEXTURE_FILTER_BILINEAR);
 SetDefaultFont(noto);
 ```

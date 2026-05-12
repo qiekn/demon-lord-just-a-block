@@ -6,7 +6,7 @@
 // Std-free deliberately. Consumers that mix `import std;` with this header
 // (e.g. main.cpp) would otherwise hit the clang+libc++ double-decl trap.
 
-namespace block {
+namespace ck {
 
 class Layer {
  public:
@@ -34,4 +34,4 @@ class Layer {
   const char* name_;
 };
 
-}  // namespace block
+}  // namespace ck

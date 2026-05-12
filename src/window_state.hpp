@@ -5,7 +5,7 @@
 // shape as baba's window.state (`x y w h`, single line). File path is fixed
 // at `window.state` in the CWD; the binary is run from the repo root.
 
-namespace block {
+namespace ck {
 
 struct WindowState {
   int x = 100;
@@ -20,4 +20,4 @@ WindowState LoadWindowState(const char* path);
 // Best-effort write; silently no-ops on filesystem error.
 void SaveWindowState(const char* path, const WindowState& state);
 
-}  // namespace block
+}  // namespace ck
