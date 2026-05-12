@@ -7,6 +7,15 @@ target_include_directories(entt INTERFACE
   ${CMAKE_CURRENT_SOURCE_DIR}/entt/src
 )
 
+# ---------------------------------------------------------------------------: spdlog as header-only INTERFACE target
+# spdlog's CMake also exposes a target, but we mirror ck-engine's pattern and
+# carry only the include dir so configure stays fast and the binary doesn't
+# pick up spdlog's bundled fmt object lib.
+add_library(spdlog_headers INTERFACE)
+target_include_directories(spdlog_headers INTERFACE
+  ${CMAKE_CURRENT_SOURCE_DIR}/spdlog/include
+)
+
 # ---------------------------------------------------------------------------: imgui static lib (docking branch)
 # raylib uses glfw + opengl internally on PLATFORM_DESKTOP, so we wire the
 # glfw + opengl3 backends. glfw headers come from raylib's bundled copy.
@@ -32,7 +41,7 @@ target_include_directories(imgui PRIVATE
 )
 
 # ---------------------------------------------------------------------------: skip module scan on non-module deps for faster configure
-foreach(_dep IN ITEMS imgui entt)
+foreach(_dep IN ITEMS imgui entt spdlog_headers)
   if(TARGET ${_dep})
     set_target_properties(${_dep} PROPERTIES CXX_SCAN_FOR_MODULES OFF)
   endif()

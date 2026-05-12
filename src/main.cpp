@@ -2,22 +2,28 @@ import std;
 import raylib;
 
 #include "imgui_layer.hpp"
+#include "log.hpp"
 
 using namespace ck;
 using namespace ck::raii;
 
 namespace {
+
 std::string ReadFile(const std::string& path) {
   std::ifstream file{path};
   return std::string{std::istreambuf_iterator<char>{file}, {}};
 }
+
 }  // namespace
 
 int main() {
+  block::Log::Init();
+  block::log::Info("Block starting");
+
   SetConfigFlags(FLAG_WINDOW_HIGHDPI | FLAG_WINDOW_RESIZABLE);
 
   Window window(1280, 720, "Block");
-  SetTargetFPS(60);
+  SetTargetFPS(160);
 
   auto codepoints = LoadCodepoints(ReadFile("assets/zh-sc-3500.txt"));
   Font noto("assets/fonts/NotoSansSC-Regular.ttf", 64, codepoints);
@@ -45,6 +51,7 @@ int main() {
     imgui.End();
   }
 
+  block::log::Info("Block shutting down");
   imgui.OnDetach();
   ClearDefaultFont();
   return 0;
