@@ -99,3 +99,5 @@ Two directories with distinct roles:
 ## Git
 
 Auto-commit is on (no `.claude/.no-autocommit`). After completing a logical change, commit it without waiting to be asked. Commit format follows the `git-commit-message` skill — `type(scope): summary`, imperative mood, one idea per commit.
+
+**Commit messages are a single line.** No extended body, no bullet lists. If the summary can't carry the change, split the commit instead. Prefer losing detail over multi-line messages — the diff is the source of truth.
