@@ -2,3 +2,7 @@
 
 build/
 .cache/
+
+# runtime layout — regenerated per-user, not source of truth
+imgui.ini
+window.state
