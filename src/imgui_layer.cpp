@@ -6,6 +6,8 @@
 #include <GLFW/glfw3.h>
 #include <raylib.h>
 
+#include "assets.hpp"
+
 namespace block {
 
 namespace {
@@ -59,7 +61,7 @@ void ImGuiLayer::OnAttach() {
   ImFontConfig cfg;
   cfg.OversampleH = 2;
   cfg.OversampleV = 2;
-  io.Fonts->AddFontFromFileTTF("assets/fonts/NotoSansSC-Regular.ttf", 18.0f * dpi, &cfg,
+  io.Fonts->AddFontFromFileTTF(BLOCK_ASSET("fonts/NotoSansSC-Regular.ttf"), 18.0f * dpi, &cfg,
                                io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
 
   ImGui::StyleColorsDark();

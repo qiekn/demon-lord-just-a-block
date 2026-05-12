@@ -1,6 +1,7 @@
 import std;
 import raylib;
 
+#include "assets.hpp"
 #include "imgui_layer.hpp"
 #include "log.hpp"
 #include "window_state.hpp"
@@ -31,8 +32,8 @@ int main() {
   SetTargetFPS(160);
   BLOCK_LOG_INFO("Window {}x{} @ ({}, {})", state.w, state.h, state.x, state.y);
 
-  auto codepoints = LoadCodepoints(ReadFile("assets/zh-sc-3500.txt"));
-  Font noto("assets/fonts/NotoSansSC-Regular.ttf", 64, codepoints);
+  auto codepoints = LoadCodepoints(ReadFile(BLOCK_ASSET("zh-sc-3500.txt")));
+  Font noto(BLOCK_ASSET("fonts/NotoSansSC-Regular.ttf"), 64, codepoints);
   SetTextureFilter(noto.Get().texture, TEXTURE_FILTER_BILINEAR);
   SetDefaultFont(noto);
 

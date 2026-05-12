@@ -1,5 +1,6 @@
 add_executable(block
   main.cpp
+  assets.cpp
   imgui_layer.cpp
   log.cpp
   window_state.cpp
