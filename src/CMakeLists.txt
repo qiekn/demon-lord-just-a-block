@@ -2,6 +2,7 @@ add_executable(block
   main.cpp
   imgui_layer.cpp
   log.cpp
+  window_state.cpp
 )
 
 target_link_libraries(block PRIVATE

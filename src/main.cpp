@@ -3,11 +3,14 @@ import raylib;
 
 #include "imgui_layer.hpp"
 #include "log.hpp"
+#include "window_state.hpp"
 
 using namespace ck;
 using namespace ck::raii;
 
 namespace {
+
+constexpr const char* kWindowStateFile = "window.state";
 
 std::string ReadFile(const std::string& path) {
   std::ifstream file{path};
@@ -22,8 +25,11 @@ int main() {
 
   SetConfigFlags(FLAG_WINDOW_HIGHDPI | FLAG_WINDOW_RESIZABLE);
 
-  Window window(1280, 720, "Block");
+  const auto state = block::LoadWindowState(kWindowStateFile);
+  Window window(state.w, state.h, "Block");
+  rl::SetWindowPosition(state.x, state.y);
   SetTargetFPS(160);
+  BLOCK_LOG_INFO("Window {}x{} @ ({}, {})", state.w, state.h, state.x, state.y);
 
   auto codepoints = LoadCodepoints(ReadFile("assets/zh-sc-3500.txt"));
   Font noto("assets/fonts/NotoSansSC-Regular.ttf", 64, codepoints);
@@ -51,7 +57,15 @@ int main() {
     imgui.End();
   }
 
+  // Capture geometry before Window destructs and tears down the GL context.
+  const ::Vector2 pos = rl::GetWindowPosition();
+  block::SaveWindowState(kWindowStateFile,
+                         {.x = static_cast<int>(pos.x),
+                          .y = static_cast<int>(pos.y),
+                          .w = window.GetScreenWidth(),
+                          .h = window.GetScreenHeight()});
   block::log::Info("Block shutting down");
+
   imgui.OnDetach();
   ClearDefaultFont();
   return 0;
