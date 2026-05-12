@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-A from-scratch remake of *卡牌魔王，只剩个头* (Steam app 3720420), originally built in Unity. Currently a scaffold: a single raylib window with a NotoSansSC default font. No gameplay yet.
+A from-scratch remake of *卡牌魔王，只剩个头* (Steam app 3720420), originally built in Unity. Currently a scaffold: raylib window with NotoSansSC default font, spdlog logger, ImGui demo overlay, window position persistence. No gameplay yet.
 
 Near-term roadmap (in order):
 1. Basic player movement.
@@ -40,18 +40,54 @@ No tests yet. Formatting is enforced by Google-based `.clang-format` (2-space in
 
 - `import std;` — yes, everywhere we can.
 - `import raylib;` — yes, Raylib-Hpp ships a C++23 module that exports the curated API (`ck::raii::Window`, `ck::Drawing`, `ck::SetDefaultFont`, color constants, etc.). See `deps/Raylib-Hpp/CLAUDE.md` for the namespace breakdown.
-- Everything else (imgui, entt, project-internal headers) — plain `#include`. Don't try to wrap them in modules.
+- Everything else (imgui, entt, spdlog, project-internal headers) — plain `#include`. Don't try to wrap them in modules.
 
 If a raylib symbol is missing from `import raylib;`, it almost certainly needs to be added to `deps/Raylib-Hpp/src/raylib.cppm` upstream — the module re-exports a curated subset by design.
 
+### `import std;` ✗ `#include <std-header>` — the load-bearing rule
+
+Clang 21 + libc++ rejects mixing `import std;` with traditional `#include <format>` (and a handful of other heavily-templated std headers) in the same TU. The std types end up declared twice — once through the module path, once through the header path — and template alias redefinition errors blow up the build.
+
+**Project rule:** project-internal headers (e.g. `src/log.hpp`) that callers include from a TU using `import std;` must be std-header-free. Use one of these escape hatches when the API would naturally want std types:
+
+- **Macros that expand `std::format` at the call site.** `src/log.hpp` is the canonical example: it declares only `void log::Info(const char*)` etc., and ships `BLOCK_LOG_*` macros that expand to `::block::log::Info(::std::format(...).c_str())`. The caller's TU is responsible for having `std::format` in scope (via `import std;`).
+- **Opaque interfaces / PIMPL.** Public headers take POD types (`const char*`, ints, raw pointers) and hide std containers in the .cpp via `struct Impl;`.
+- **Local non-`import-std` TUs.** Files like `src/imgui_layer.cpp` and `src/application.cpp` use plain `#include <vector>` etc. and never `import std;`. They can pull in any headers they like; main.cpp just stays away from those headers itself.
+
+If you find yourself adding `#include <format>`, `#include <ranges>`, etc. to a header that main.cpp transitively pulls in, stop — go pick one of the patterns above instead.
+
+## Logging
+
+```cpp
+#include "log.hpp"
+
+block::Log::Init();              // call once at startup
+block::log::Info("Block ready"); // const char* (no format args)
+BLOCK_LOG_INFO("frame {:.2f} ms", dt * 1000.0f);  // formatted
+```
+
+Levels: `BLOCK_LOG_{TRACE,DEBUG,INFO,WARN,ERROR,FATAL}` and the matching `block::log::*` plain-string functions. Both route to a single shared spdlog stdout-color sink. Pattern: `[HH:MM:SS] [level] msg`. Default level is `trace`.
+
+## Window State
+
+`window.state` (gitignored) holds the previous run's window geometry as `x y w h` on a single line. `Application` loads it before `InitWindow` and saves before `CloseWindow`. The file lives in CWD; running from outside the repo root creates a stray copy.
+
 ## Architecture
 
-Single executable today (`src/main.cpp` only). Planned layout, modelled on baba (`../baba/`) and ck-engine (`~/projects/ck-engine/`):
+**Current** (top-down, all under `src/`):
 
-- **Layer / LayerStack** — virtual `OnAttach / OnDetach / OnUpdate(dt) / OnRender / OnImGuiRender`, driven by the main loop. Overlays sit on top of layers; events iterate in reverse.
+- `main.cpp` — entry point. `import std;` + `import raylib;`. Initializes `block::Log`, creates `block::Application`, loads the default font, pushes layers, runs.
+- `application.hpp/cpp` — `block::Application` owns the raylib window and the `LayerStack`. Window geometry is loaded/saved through `window_state.hpp/cpp`. ApplicationSpec carries name/size/fps/dpi.
+- `layer.hpp` — `block::Layer` base with `OnAttach / OnDetach / OnUpdate(dt) / OnRender / OnImGuiRender / OnImGuiBegin / OnImGuiEnd`. Std-free header so consumers can `import std;` freely.
+- `imgui_layer.hpp/cpp` — overlay derived from `Layer`. Owns the ImGui context + the `imgui_impl_glfw` + `imgui_impl_opengl3` backends. Overrides `OnImGuiBegin/End` to bracket the frame around every other layer's `OnImGuiRender`. raylib uses GLFW + GL 3.3 internally on PLATFORM_DESKTOP, so the backend grabs the active context via `glfwGetCurrentContext()` after `InitWindow`.
+- `log.hpp/cpp` — spdlog-backed logger. See "Logging" above.
+- `window_state.hpp/cpp` — `x y w h` persistence. See "Window State" above.
+- `assets.hpp` — `BLOCK_ASSET("rel/path")` compile-time macro that prefixes with `assets/`, plus a runtime `block::AssetPath()` for paths built from dynamic strings.
+
+**Planned** (not yet implemented):
+
 - **World** — what other engines call "Scene". Wraps `entt::registry`. Owns actors and runs systems.
 - **Actor** — what other engines call "Entity" or "GameObject". Thin handle over `(entt::entity, World*)`; templated `AddComponent / GetComponent / HasComponent / RemoveComponent`.
-- **ImGuiLayer** — overlay that owns the ImGui context and the `imgui_impl_glfw` + `imgui_impl_opengl3` backends. raylib uses GLFW + GL 3.3 internally on PLATFORM_DESKTOP, so we grab the active context via `glfwGetCurrentContext()` after `InitWindow`.
 
 Naming chosen deliberately: **World** instead of Scene, **Actor** instead of Entity/GameObject. Stick to that vocabulary in new code so the public API stays self-consistent.
 
@@ -59,8 +95,9 @@ Naming chosen deliberately: **World** instead of Scene, **Actor** instead of Ent
 
 Submodules:
 - `deps/Raylib-Hpp` — qiekn/Raylib-Hpp; provides `import raylib;` (target `raylib_hpp_modules`) and bundles raylib at `refs/raylib` (gitignored by the wrapper; must be cloned locally).
-- `deps/imgui` — ocornut/imgui on the **docking** branch. Not yet linked into the binary; will be wired up alongside `ImGuiLayer`.
-- `deps/entt` — header-only; exposed as INTERFACE target `entt`. Use `#include <entt/entt.hpp>` once linked.
+- `deps/imgui` — ocornut/imgui on the **docking** branch. Built as a local static `imgui` target with the glfw + opengl3 backends.
+- `deps/entt` — header-only; exposed as INTERFACE target `entt`. Linked but not yet used.
+- `deps/spdlog` — header-only; exposed as INTERFACE target `spdlog_headers`. Linked via `log.cpp` only.
 
 `deps/CMakeLists.txt` wires up the targets. When adding new deps, prefer submodules over vendoring.
 
@@ -91,10 +128,11 @@ Two directories with distinct roles:
 
 - `build/` — gitignored build output.
 - `cmake/` — `EnableCxxImportStd.cmake` only.
-- `src/` — game source. Right now just `main.cpp`; engine modules land here as Layer/World/Actor get implemented.
+- `src/` — game source. Engine modules (layer/application/log/window_state/assets/imgui_layer) live alongside `main.cpp`. Add new layers (e.g. game logic) as additional `*_layer.{hpp,cpp}` files.
 - `deps/` — submodules + `CMakeLists.txt` wiring.
-- `assets/` — runtime assets (committed).
+- `assets/` — runtime assets (committed). Reach into via `BLOCK_ASSET("...")` from `src/assets.hpp`.
 - `export/` — Unity asset dump (local only, gitignored).
+- `docs/` — mdBook scaffold for design notes (separate from this guide).
 
 ## Git
 
