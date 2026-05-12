@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <filesystem>
 #include <memory>
+#include <system_error>
 #include <vector>
 
 #include <raylib.h>
@@ -16,6 +18,31 @@ namespace ck {
 namespace {
 
 constexpr const char* kWindowStateFile = "window.state";
+
+namespace fs = std::filesystem;
+
+// Pin CWD to the directory that holds `assets/`. Without this, the binary
+// works only when launched from the repo root: launching from `build/` or via
+// IDE would leave CWD elsewhere and every `assets/...` path would fail.
+// Candidates checked in order: current CWD, binary dir, binary dir / "..".
+void AnchorWorkingDirectory() {
+  std::error_code ec;
+  const fs::path cwd = fs::current_path(ec);
+  const fs::path exe_dir = fs::path{::GetApplicationDirectory()};
+
+  const fs::path candidates[] = {cwd, exe_dir, exe_dir / ".."};
+  for (const auto& base : candidates) {
+    if (fs::is_directory(base / "assets", ec)) {
+      const fs::path resolved = fs::weakly_canonical(base, ec);
+      if (resolved != cwd) {
+        fs::current_path(resolved, ec);
+        log::Info("Anchored working directory to assets root");
+      }
+      return;
+    }
+  }
+  log::Warn("No assets/ directory found near CWD or binary; file loads may fail");
+}
 
 class LayerStack {
  public:
@@ -66,6 +93,8 @@ struct Application::State {
 };
 
 Application::Application(ApplicationSpec spec) : state_(new State{.spec = spec}) {
+  AnchorWorkingDirectory();
+
   unsigned int flags = 0;
   if (spec.high_dpi) flags |= FLAG_WINDOW_HIGHDPI;
   if (spec.resizable) flags |= FLAG_WINDOW_RESIZABLE;
