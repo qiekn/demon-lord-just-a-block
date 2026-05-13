@@ -31,7 +31,7 @@ Player::Player(GridCoord start)
       prev_(start),
       repeat_timer_(tuning.repeat_interval),
       sprite_(CK_ASSET("sprites/player.png")),
-      block_(CK_ASSET("sprites/player_block.png")) {
+      block_(CK_ASSET("sprites/cards/card100.png")) {
   sprite_.SetFilter(::TEXTURE_FILTER_BILINEAR);
   block_.SetFilter(::TEXTURE_FILTER_BILINEAR);
 }
@@ -99,14 +99,14 @@ void Player::Render(const Grid& grid) const {
       Lerp(from.y, to.y, sprite_e) - tuning.hop_height * cs * arc;
 
   // Background block: textured fill + pixelated dark outline.
-  const float bg_size = cs * 0.86f;
+  const float bg_size = cs;
   const float bg_half = bg_size * 0.5f;
   const ::Rectangle bg_dst{block_x - bg_half, block_y - bg_half, bg_size,
                            bg_size};
   const ::Rectangle bg_src{0, 0, static_cast<float>(block_.GetWidth()),
                            static_cast<float>(block_.GetHeight())};
   block_.DrawPro(bg_src, bg_dst, {0, 0}, 0.0f, ck::WHITE);
-  ck::DrawRectangleLinesEx(bg_dst, 3.0f, ::Color{20, 40, 90, 255});
+  // ck::DrawRectangleLinesEx(bg_dst, 3.0f, ::Color{20, 40, 90, 255});
 
   // Sprite, centered on hop-offset position.
   const float sp_size = cs * 0.9f;
