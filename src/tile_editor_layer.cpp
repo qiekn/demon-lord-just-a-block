@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <array>
 #include <fstream>
-#include <string>
 #include <vector>
 
 #include <imgui.h>
@@ -20,18 +19,25 @@ namespace {
 constexpr int kDefaultCols = 11;
 constexpr int kDefaultRows = 7;
 constexpr int kDefaultTilePx = 96;
-constexpr int kCardFirst = 100;
-constexpr int kCardLast = 135;
-constexpr int kCardCount = kCardLast - kCardFirst + 1;  // 36
-constexpr int kTileEmpty = -1;
-constexpr int kTileDefault = 0;  // index into cards_[] → Card100
 constexpr const char* kTileFile = "tilemap.txt";
+
+// Floor brush palette. First two form the default checkerboard pattern; the
+// rest are alternative grid sprites loaded from assets/sprites/grid/.
+struct TileDef {
+  const char* label;
+  const char* path;
+};
+
+constexpr std::array<TileDef, 2> kTiles{{
+    {"grass A", CK_ASSET("sprites/grid/grid #2327.png")},
+    {"grass B", CK_ASSET("sprites/grid/grid2 #2366.png")},
+}};
 
 }  // namespace
 
 struct TileEditorLayer::State {
-  std::array<Texture2D, kCardCount> cards{};
-  std::array<bool, kCardCount> loaded{};
+  std::array<Texture2D, kTiles.size()> textures{};
+  std::array<bool, kTiles.size()> loaded{};
 
   int cols = kDefaultCols;
   int rows = kDefaultRows;
@@ -40,23 +46,37 @@ struct TileEditorLayer::State {
   int origin_x = 0;
   int origin_y = 0;
 
-  // Row-major: tiles[r * cols + c]. Values in [0, kCardCount) index cards[];
-  // kTileEmpty leaves the cell unpainted.
+  // Row-major: tiles[r * cols + c]. Values index kTiles[].
   std::vector<int> tiles;
 
-  int brush_id = kTileDefault;
-  bool show_grid = true;
+  int brush_id = 0;
+  bool show_grid = false;
   bool paint_mode = true;
+
+  void Checkerboard() {
+    tiles.assign(static_cast<size_t>(cols) * rows, 0);
+    for (int r = 0; r < rows; ++r) {
+      for (int c = 0; c < cols; ++c) {
+        tiles[r * cols + c] = (r + c) & 1;
+      }
+    }
+  }
 
   void Resize(int new_cols, int new_rows) {
     new_cols = std::max(1, new_cols);
     new_rows = std::max(1, new_rows);
-    std::vector<int> next(static_cast<size_t>(new_cols) * new_rows, kTileDefault);
+    std::vector<int> next(static_cast<size_t>(new_cols) * new_rows, 0);
     const int copy_cols = std::min(cols, new_cols);
     const int copy_rows = std::min(rows, new_rows);
     for (int r = 0; r < copy_rows; ++r) {
       for (int c = 0; c < copy_cols; ++c) {
         next[r * new_cols + c] = tiles[r * cols + c];
+      }
+    }
+    // Fill the new region with checkerboard so resizing extends the pattern.
+    for (int r = 0; r < new_rows; ++r) {
+      for (int c = 0; c < new_cols; ++c) {
+        if (r >= copy_rows || c >= copy_cols) next[r * new_cols + c] = (r + c) & 1;
       }
     }
     tiles = std::move(next);
@@ -73,24 +93,24 @@ struct TileEditorLayer::State {
 
 void TileEditorLayer::OnAttach() {
   state_ = new State{};
-  state_->tiles.assign(static_cast<size_t>(state_->cols) * state_->rows, kTileDefault);
 
-  for (int i = 0; i < kCardCount; ++i) {
-    const std::string rel = "sprites/cards/card" + std::to_string(kCardFirst + i) + ".png";
-    state_->cards[i] = ::LoadTexture(AssetPath(rel.c_str()));
-    state_->loaded[i] = state_->cards[i].id != 0;
+  for (size_t i = 0; i < kTiles.size(); ++i) {
+    state_->textures[i] = ::LoadTexture(kTiles[i].path);
+    state_->loaded[i] = state_->textures[i].id != 0;
     if (state_->loaded[i]) {
-      ::SetTextureFilter(state_->cards[i], TEXTURE_FILTER_BILINEAR);
+      ::SetTextureFilter(state_->textures[i], TEXTURE_FILTER_BILINEAR);
     } else {
-      log::Warn("TileEditorLayer: failed to load a card sprite");
+      log::Warn("TileEditorLayer: failed to load a floor tile");
     }
   }
+
+  state_->Checkerboard();
 }
 
 void TileEditorLayer::OnDetach() {
   if (!state_) return;
-  for (int i = 0; i < kCardCount; ++i) {
-    if (state_->loaded[i]) ::UnloadTexture(state_->cards[i]);
+  for (size_t i = 0; i < kTiles.size(); ++i) {
+    if (state_->loaded[i]) ::UnloadTexture(state_->textures[i]);
   }
   delete state_;
   state_ = nullptr;
@@ -111,7 +131,9 @@ void TileEditorLayer::OnUpdate(float /*dt*/) {
   if (::IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
     state_->tiles[gy * state_->cols + gx] = state_->brush_id;
   } else if (::IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-    state_->tiles[gy * state_->cols + gx] = kTileEmpty;
+    // Right-click swaps to the other tile in the pair (toggle).
+    const int other = 1 - state_->brush_id;
+    state_->tiles[gy * state_->cols + gx] = other;
   }
 }
 
@@ -123,8 +145,8 @@ void TileEditorLayer::OnRender() {
   for (int r = 0; r < state_->rows; ++r) {
     for (int c = 0; c < state_->cols; ++c) {
       const int id = state_->tiles[r * state_->cols + c];
-      if (id < 0 || id >= kCardCount || !state_->loaded[id]) continue;
-      const Texture2D& tex = state_->cards[id];
+      if (id < 0 || id >= static_cast<int>(kTiles.size()) || !state_->loaded[id]) continue;
+      const Texture2D& tex = state_->textures[id];
       const ::Rectangle src{0, 0, static_cast<float>(tex.width),
                             static_cast<float>(tex.height)};
       const ::Rectangle dst{static_cast<float>(ox + c * tp),
@@ -178,24 +200,15 @@ void TileEditorLayer::OnImGuiRender() {
   }
 
   ImGui::SeparatorText("Brush / 笔刷");
-  ImGui::Text("Selected: card%d", kCardFirst + state_->brush_id);
-  constexpr int kCols = 6;
-  constexpr float kThumb = 36.0f;
-  for (int i = 0; i < kCardCount; ++i) {
-    if (i % kCols != 0) ImGui::SameLine();
-    ImGui::PushID(i);
-    const bool selected = i == state_->brush_id;
-    if (selected) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.95f, 0.7f, 0.1f, 1.0f));
+  for (int i = 0; i < static_cast<int>(kTiles.size()); ++i) {
+    if (i != 0) ImGui::SameLine();
+    ImGui::RadioButton(kTiles[i].label, &state_->brush_id, i);
+  }
+  for (int i = 0; i < static_cast<int>(kTiles.size()); ++i) {
+    if (i != 0) ImGui::SameLine();
     if (state_->loaded[i]) {
-      if (ImGui::ImageButton("##c", static_cast<ImTextureID>(state_->cards[i].id),
-                             ImVec2(kThumb, kThumb))) {
-        state_->brush_id = i;
-      }
-    } else {
-      if (ImGui::Button("##c", ImVec2(kThumb + 8.0f, kThumb + 8.0f))) state_->brush_id = i;
+      ImGui::Image(static_cast<ImTextureID>(state_->textures[i].id), ImVec2(48, 48));
     }
-    if (selected) ImGui::PopStyleColor();
-    ImGui::PopID();
   }
 
   ImGui::SeparatorText("View");
@@ -204,9 +217,11 @@ void TileEditorLayer::OnImGuiRender() {
   ImGui::Checkbox("Show grid", &state_->show_grid);
 
   ImGui::SeparatorText("Map");
-  if (ImGui::Button("Clear")) std::fill(state_->tiles.begin(), state_->tiles.end(), kTileEmpty);
+  if (ImGui::Button("Checkerboard")) state_->Checkerboard();
   ImGui::SameLine();
-  if (ImGui::Button("Fill")) std::fill(state_->tiles.begin(), state_->tiles.end(), state_->brush_id);
+  if (ImGui::Button("Fill")) {
+    std::fill(state_->tiles.begin(), state_->tiles.end(), state_->brush_id);
+  }
   ImGui::SameLine();
   if (ImGui::Button("Save")) {
     std::ofstream f(kTileFile);
@@ -229,13 +244,13 @@ void TileEditorLayer::OnImGuiRender() {
       state_->cols = cc;
       state_->rows = rr;
       state_->tile_px = tp;
-      state_->tiles.assign(static_cast<size_t>(cc) * rr, kTileEmpty);
+      state_->tiles.assign(static_cast<size_t>(cc) * rr, 0);
       for (auto& v : state_->tiles) f >> v;
       log::Info("Tile map loaded");
     }
   }
 
-  ImGui::TextUnformatted("LMB: paint   RMB: erase");
+  ImGui::TextUnformatted("LMB: paint   RMB: swap");
   ImGui::End();
 }
 
