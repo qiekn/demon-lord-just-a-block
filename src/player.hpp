@@ -24,7 +24,7 @@ class Player {
     float block_duration = 0.20f;
     float hop_height = 0.2f;             // multiples of cell size (vertical moves)
     float hop_height_horizontal = 0.2f;  // multiples of cell size (L/R moves)
-    float sprite_scale = 0.55f;          // sprite size as multiples of cell size
+    float sprite_scale = 0.7f;           // sprite size as multiples of cell size
   };
 
   explicit Player(GridCoord start);
