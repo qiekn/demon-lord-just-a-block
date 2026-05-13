@@ -8,7 +8,6 @@
 #include "shapes.hpp"
 
 #include "assets.hpp"
-#include "text_outliner.hpp"
 
 namespace ck {
 
@@ -97,7 +96,7 @@ void Player::Update(float dt, const Grid& grid) {
   if (anim_t_ < 1.0f) anim_t_ = Clamp01(anim_t_ + dt / tuning.block_duration);
 }
 
-void Player::Render(const Grid& grid, TextOutliner& outliner) const {
+void Player::Render(const Grid& grid) const {
   const float cs = grid.CellSize();
   const ::Vector2 from = grid.CellCenter(prev_);
   const ::Vector2 to = grid.CellCenter(pos_);
@@ -142,9 +141,8 @@ void Player::Render(const Grid& grid, TextOutliner& outliner) const {
   sprite_.DrawPro(sp_src, sp_dst, {0, 0}, 0.0f, ck::WHITE);
 
   // HP bar: rounded red pill sitting on top of the block, black outline,
-  // centered HP number with a black sample-the-neighbors text outline.
-  // All sizes are proportional to cs so the bar scales from windowed up to
-  // 4K (one cell ≈ 215 px) without going invisible or pixelating.
+  // centered HP number. Sizes are proportional to cs so the bar scales from
+  // windowed up to 4K (one cell ≈ 215 px) without going invisible or pixelating.
   const float bar_w = cs * 0.42f;
   const float bar_h = cs * 0.15f;
   const float bar_x = block_x - bar_w * 0.5f;
@@ -162,9 +160,7 @@ void Player::Render(const Grid& grid, TextOutliner& outliner) const {
   const int text_w = ck::MeasureText(hp_str, font_size);
   const int text_x = static_cast<int>(bar_x + bar_w * 0.5f) - text_w / 2;
   const int text_y = static_cast<int>(bar_y + bar_h * 0.5f) - font_size / 2;
-  const float outline_px = std::max(1.5f, font_size / 12.0f);
-  outliner.DrawText(hp_str.c_str(), text_x, text_y, font_size, ck::WHITE,
-                    ::Color{0, 0, 0, 255}, outline_px);
+  ck::DrawText(hp_str.c_str(), text_x, text_y, font_size, ck::WHITE);
 }
 
 }  // namespace ck

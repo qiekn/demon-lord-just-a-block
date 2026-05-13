@@ -10,8 +10,6 @@
 
 namespace ck {
 
-class TextOutliner;
-
 class Player {
  public:
   // Tunable knobs exposed publicly so ImGui (or a settings panel) can write
@@ -34,7 +32,7 @@ class Player {
   Player& operator=(const Player&) = delete;
 
   void Update(float dt, const Grid& grid);
-  void Render(const Grid& grid, TextOutliner& outliner) const;
+  void Render(const Grid& grid) const;
 
   GridCoord Position() const { return pos_; }
   int Hp() const { return hp_; }

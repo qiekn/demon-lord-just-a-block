@@ -8,13 +8,13 @@ add_executable(block
   imgui_layer.cpp
   log.cpp
   player.cpp
-  text_outliner.cpp
   tile_editor_layer.cpp
   window_state.cpp
 )
 
 target_link_libraries(block PRIVATE
   raylib_hpp_modules
+  raygui_hpp_modules
   imgui
   entt
   spdlog_headers
