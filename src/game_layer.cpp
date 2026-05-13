@@ -1,22 +1,45 @@
 #include "game_layer.hpp"
 
 #include <imgui.h>
-#include <raylib.h>
 
-#include "font_default.hpp"
+#include "grid.hpp"
+#include "player.hpp"
 
 namespace ck {
 
+// Grid and Player are both RAII (textures unload in their destructors).
+// State packages them by value so a single `delete state_` tears everything
+// down — no per-resource new/delete in OnAttach/OnDetach.
+struct GameLayer::State {
+  Grid grid;
+  Player player;
+  bool show_demo = false;
+
+  State() : grid(11, 7, 96.0f), player({grid.Cols() / 2, grid.Rows() / 2}) {}
+};
+
+GameLayer::GameLayer() : Layer("GameLayer") {}
+GameLayer::~GameLayer() { delete state_; }
+
+void GameLayer::OnAttach() { state_ = new State{}; }
+
+void GameLayer::OnDetach() {
+  delete state_;
+  state_ = nullptr;
+}
+
+void GameLayer::OnUpdate(float dt) {
+  if (state_) state_->player.Update(dt, state_->grid);
+}
+
 void GameLayer::OnRender() {
-  const char* title = "Block · 方块";
-  const int font_size = 48;
-  const int tw = ck::MeasureText(title, font_size);
-  ck::DrawText(title, (GetScreenWidth() - tw) / 2, (GetScreenHeight() - font_size) / 2, font_size,
-               BLACK);
+  if (!state_) return;
+  state_->grid.Render();
+  state_->player.Render(state_->grid);
 }
 
 void GameLayer::OnImGuiRender() {
-  if (show_demo_) ImGui::ShowDemoWindow(&show_demo_);
+  if (state_ && state_->show_demo) ImGui::ShowDemoWindow(&state_->show_demo);
 }
 
 }  // namespace ck

@@ -3,8 +3,10 @@ add_executable(block
   application.cpp
   assets.cpp
   game_layer.cpp
+  grid.cpp
   imgui_layer.cpp
   log.cpp
+  player.cpp
   window_state.cpp
 )
 
