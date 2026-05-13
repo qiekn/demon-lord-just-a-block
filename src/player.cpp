@@ -142,14 +142,14 @@ void Player::Render(const Grid& grid, TextOutliner& outliner) const {
   // centered HP number with a black sample-the-neighbors text outline.
   // All sizes are proportional to cs so the bar scales from windowed up to
   // 4K (one cell ≈ 215 px) without going invisible or pixelating.
-  const float bar_w = cs * 0.60f;
-  const float bar_h = cs * 0.22f;
+  const float bar_w = cs * 0.42f;
+  const float bar_h = cs * 0.15f;
   const float bar_x = block_x - bar_w * 0.5f;
   const float bar_y = block_y - bg_half - bar_h * 0.5f;
   const ::Rectangle bar{bar_x, bar_y, bar_w, bar_h};
   const float roundness = 0.55f;
   const int segments = 12;
-  const float stroke = std::max(2.0f, cs * 0.025f);
+  const float stroke = std::max(1.5f, cs * 0.012f);
   ck::DrawRectangleRounded(bar, roundness, segments, ::Color{210, 55, 55, 255});
   ck::DrawRectangleRoundedLinesEx(bar, roundness, segments, stroke,
                                   ::Color{0, 0, 0, 255});
