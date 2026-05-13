@@ -12,6 +12,15 @@ namespace ck {
 
 class Player {
  public:
+  // Tunable knobs exposed publicly so ImGui (or a settings panel) can write
+  // through them without ceremony. Defaults are the gameplay-feel baseline.
+  struct Tuning {
+    float repeat_interval = 0.22f;  // seconds between auto-repeats while held
+    float sprite_duration = 0.16f;
+    float block_duration = 0.28f;
+    float hop_height = 0.45f;  // multiples of cell size
+  };
+
   explicit Player(GridCoord start);
 
   Player(const Player&) = delete;
@@ -26,8 +35,10 @@ class Player {
   void Damage(int amount);
   void Heal(int amount);
 
+  Tuning tuning;
+
  private:
-  void TryMove(int dx, int dy, const Grid& grid);
+  bool TryMove(int dx, int dy, const Grid& grid);
 
   GridCoord pos_;
   GridCoord prev_;
@@ -35,13 +46,12 @@ class Player {
   int hp_ = 5;
   int max_hp_ = 5;
 
-  // anim_t_ advances 0 → 1 over block_duration_; the sprite tween reuses the
-  // same clock at a faster effective rate and adds a parabolic arc, so the
-  // sprite visibly leads the block.
+  // Tween clock: 0 → 1 over `tuning.block_duration` seconds.
   float anim_t_ = 1.0f;
-  float sprite_duration_ = 0.16f;
-  float block_duration_ = 0.28f;
-  float hop_height_ = 0.45f;
+
+  // Repeat-key clock. Primed to `tuning.repeat_interval` when no direction
+  // key is held, so the first frame a key is detected fires immediately.
+  float repeat_timer_ = 0.0f;
 
   ::ck::raii::Texture sprite_;
   ::ck::raii::Texture block_;

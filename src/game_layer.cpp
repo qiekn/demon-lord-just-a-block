@@ -39,7 +39,17 @@ void GameLayer::OnRender() {
 }
 
 void GameLayer::OnImGuiRender() {
-  if (state_ && state_->show_demo) ImGui::ShowDemoWindow(&state_->show_demo);
+  if (!state_) return;
+  if (ImGui::Begin("Player tuning")) {
+    auto& t = state_->player.tuning;
+    ImGui::SliderFloat("Key repeat", &t.repeat_interval, 0.05f, 0.8f, "%.2f s");
+    ImGui::SliderFloat("Sprite tween", &t.sprite_duration, 0.05f, 0.6f, "%.2f s");
+    ImGui::SliderFloat("Block tween", &t.block_duration, 0.05f, 0.6f, "%.2f s");
+    ImGui::SliderFloat("Hop height", &t.hop_height, 0.0f, 1.0f, "%.2f cells");
+    ImGui::Checkbox("ImGui demo", &state_->show_demo);
+  }
+  ImGui::End();
+  if (state_->show_demo) ImGui::ShowDemoWindow(&state_->show_demo);
 }
 
 }  // namespace ck
