@@ -107,6 +107,14 @@ Application::Application(ApplicationSpec spec) : state_(new State{.spec = spec})
   SetWindowPosition(ws.x, ws.y);
   SetTargetFPS(spec.target_fps);
 
+  // With HIGHDPI raylib draws in logical coords (screen.width) and scales to
+  // the framebuffer via screenScale, but GetMousePosition() returns raw GLFW
+  // pixels. Invert that here so mouse coords match raylib's drawing space.
+  if (spec.high_dpi) {
+    const Vector2 dpi = GetWindowScaleDPI();
+    if (dpi.x > 0.0f && dpi.y > 0.0f) SetMouseScale(1.0f / dpi.x, 1.0f / dpi.y);
+  }
+
   log::Info("Application started");
 }
 
