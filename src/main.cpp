@@ -6,6 +6,7 @@ import raylib;
 #include "game_layer.hpp"
 #include "imgui_layer.hpp"
 #include "log.hpp"
+#include "tile_editor_layer.hpp"
 
 using namespace ck;
 using namespace ck::raii;
@@ -33,6 +34,7 @@ int main() {
   SetDefaultFont(noto);
 
   app.PushOverlay(new ck::ImGuiLayer);
+  app.PushLayer(new ck::TileEditorLayer);
   app.PushLayer(new ck::GameLayer);
 
   app.Run();

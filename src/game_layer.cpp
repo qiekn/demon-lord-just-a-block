@@ -7,9 +7,8 @@
 
 namespace ck {
 
-// Grid and Player are both RAII (textures unload in their destructors).
-// State packages them by value so a single `delete state_` tears everything
-// down — no per-resource new/delete in OnAttach/OnDetach.
+// Player owns textures (RAII), Grid is coord-only. `delete state_` tears
+// everything down — no per-resource new/delete in OnAttach/OnDetach.
 struct GameLayer::State {
   Grid grid;
   Player player;
@@ -34,7 +33,6 @@ void GameLayer::OnUpdate(float dt) {
 
 void GameLayer::OnRender() {
   if (!state_) return;
-  state_->grid.Render();
   state_->player.Render(state_->grid);
 }
 

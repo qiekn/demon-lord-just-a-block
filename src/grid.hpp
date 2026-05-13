@@ -1,13 +1,9 @@
 #pragma once
 
-// Tile grid. Owns the floor texture as ck::raii::Texture (RAII unload), and
-// renders a cols × rows board centered on the current screen each frame.
-//
-// Reaches raylib only via "texture.hpp" → raylib_c.hpp, which strips the
-// RED/BLUE/WHITE color macros — safe to include from any TU that also goes
-// through the ck:: color constants. Don't include <raylib.h> directly.
+// Tile grid: cols × rows board centered on the current screen. Coord helpers
+// only — background tiles are owned by TileEditorLayer.
 
-#include "texture.hpp"
+#include "raylib_c.hpp"
 
 namespace ck {
 
@@ -18,12 +14,11 @@ struct GridCoord {
 
 class Grid {
  public:
-  Grid(int cols, int rows, float cell_size);
+  Grid(int cols, int rows, float cell_size)
+      : cols_(cols), rows_(rows), cell_size_(cell_size) {}
 
   Grid(const Grid&) = delete;
   Grid& operator=(const Grid&) = delete;
-
-  void Render() const;
 
   ::Vector2 CellTopLeft(GridCoord c) const;
   ::Vector2 CellCenter(GridCoord c) const;
@@ -38,7 +33,6 @@ class Grid {
   int cols_;
   int rows_;
   float cell_size_;
-  ::ck::raii::Texture floor_;
 };
 
 }  // namespace ck
