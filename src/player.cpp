@@ -55,8 +55,48 @@ void Player::Update(float dt, const Grid& grid) {
   // ImGui can write max_hp_ below hp_; snap hp back into range each frame.
   if (hp_ > max_hp_) hp_ = max_hp_;
 
-  // Resolve which direction is currently being requested. Held wins; priority
-  // order keeps behavior deterministic when diagonal-equivalent keys overlap.
+  // Advance the tween FIRST so input can react to a tween that just finished
+  // this frame, instead of losing a frame to it.
+  if (anim_t_ < 1.0f) anim_t_ = Clamp01(anim_t_ + dt / tuning.block_duration);
+
+  // Drain a buffered press the instant the tween is idle again. Done before
+  // edge detection so a fresh press this frame doesn't overwrite the older
+  // queued one — both get to execute in order.
+  if (has_buffered_input_ && anim_t_ >= 1.0f) {
+    TryMove(buffered_dx_, buffered_dy_, grid);
+    awaiting_first_repeat_ = true;
+    repeat_timer_ = 0.0f;
+    has_buffered_input_ = false;
+  }
+
+  // Rising-edge taps: if the tween is idle, fire now; otherwise stash for the
+  // next drain. Priority matches the held-key resolution below.
+  int edge_dx = 0;
+  int edge_dy = 0;
+  if (::IsKeyPressed(::KEY_RIGHT) || ::IsKeyPressed(::KEY_D))
+    edge_dx = 1;
+  else if (::IsKeyPressed(::KEY_LEFT) || ::IsKeyPressed(::KEY_A))
+    edge_dx = -1;
+  else if (::IsKeyPressed(::KEY_DOWN) || ::IsKeyPressed(::KEY_S))
+    edge_dy = 1;
+  else if (::IsKeyPressed(::KEY_UP) || ::IsKeyPressed(::KEY_W))
+    edge_dy = -1;
+
+  if (edge_dx != 0 || edge_dy != 0) {
+    if (anim_t_ >= 1.0f) {
+      TryMove(edge_dx, edge_dy, grid);
+      awaiting_first_repeat_ = true;
+      repeat_timer_ = 0.0f;
+      has_buffered_input_ = false;
+    } else {
+      buffered_dx_ = edge_dx;
+      buffered_dy_ = edge_dy;
+      has_buffered_input_ = true;
+    }
+  }
+
+  // Auto-repeat for keys held across frames. Priority order keeps behavior
+  // deterministic when diagonal-equivalent keys overlap.
   int dx = 0;
   int dy = 0;
   if (::IsKeyDown(::KEY_RIGHT) || ::IsKeyDown(::KEY_D))
@@ -70,13 +110,6 @@ void Player::Update(float dt, const Grid& grid) {
 
   const bool held = (dx != 0 || dy != 0);
   if (!held) {
-    prev_held_ = false;
-    awaiting_first_repeat_ = true;
-    repeat_timer_ = 0.0f;
-  } else if (!prev_held_) {
-    // Rising edge — fire immediately and start counting toward repeat_delay.
-    TryMove(dx, dy, grid);
-    prev_held_ = true;
     awaiting_first_repeat_ = true;
     repeat_timer_ = 0.0f;
   } else {
@@ -88,12 +121,8 @@ void Player::Update(float dt, const Grid& grid) {
         repeat_timer_ = 0.0f;
         awaiting_first_repeat_ = false;
       }
-      // If TryMove failed (tween still in flight or hit a wall), leave the
-      // timer at threshold — we retry next frame.
     }
   }
-
-  if (anim_t_ < 1.0f) anim_t_ = Clamp01(anim_t_ + dt / tuning.block_duration);
 }
 
 void Player::Render(const Grid& grid) const {
