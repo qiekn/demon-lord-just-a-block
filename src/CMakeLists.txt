@@ -7,6 +7,7 @@ add_executable(block
   grid.cpp
   imgui_layer.cpp
   log.cpp
+  main_menu_layer.cpp
   player.cpp
   tile_editor_layer.cpp
   window_state.cpp
