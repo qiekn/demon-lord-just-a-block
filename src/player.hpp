@@ -37,6 +37,10 @@ class Player {
   GridCoord Position() const { return pos_; }
   int Hp() const { return hp_; }
   int MaxHp() const { return max_hp_; }
+  // Mutable handles for ImGui scrubbing. Gameplay code should still go through
+  // Damage / Heal — these exist so a slider can write through directly.
+  int& HpRef() { return hp_; }
+  int& MaxHpRef() { return max_hp_; }
   void Damage(int amount);
   void Heal(int amount);
 

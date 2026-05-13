@@ -53,6 +53,9 @@ bool Player::TryMove(int dx, int dy, const Grid& grid) {
 }
 
 void Player::Update(float dt, const Grid& grid) {
+  // ImGui can write max_hp_ below hp_; snap hp back into range each frame.
+  if (hp_ > max_hp_) hp_ = max_hp_;
+
   // Resolve which direction is currently being requested. Held wins; priority
   // order keeps behavior deterministic when diagonal-equivalent keys overlap.
   int dx = 0;
