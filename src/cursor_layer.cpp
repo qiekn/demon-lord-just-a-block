@@ -12,7 +12,7 @@ struct CursorLayer::State {
   Texture2D tex{};
   bool loaded = false;
   bool enabled = true;
-  float scale = 1.0f;
+  float scale = 0.55f;
   // Track OS cursor visibility so we don't spam GLFW each frame.
   bool os_cursor_visible = true;
 };
