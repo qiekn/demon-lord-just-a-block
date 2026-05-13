@@ -25,6 +25,7 @@ class Player {
     float hop_height = 0.2f;             // multiples of cell size (vertical moves)
     float hop_height_horizontal = 0.2f;  // multiples of cell size (L/R moves)
     float sprite_scale = 0.7f;           // sprite size as multiples of cell size
+    int hp_font_size = 12;               // HP digit font size in pixels
   };
 
   explicit Player(GridCoord start);

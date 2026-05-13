@@ -50,6 +50,7 @@ void GameLayer::OnImGuiRender() {
     ImGui::SliderFloat("Hop height (V)", &t.hop_height, 0.0f, 1.5f, "%.2f cells");
     ImGui::SliderFloat("Hop height (H)", &t.hop_height_horizontal, 0.0f, 1.5f, "%.2f cells");
     ImGui::SliderFloat("Sprite scale", &t.sprite_scale, 0.1f, 1.0f, "%.2f cells");
+    ImGui::SliderInt("HP font size", &t.hp_font_size, 6, 48, "%d px");
     ImGui::Separator();
     ImGui::SliderInt("Max HP", &state_->player.MaxHpRef(), 1, 99);
     ImGui::SliderInt("HP", &state_->player.HpRef(), 0, state_->player.MaxHpRef());

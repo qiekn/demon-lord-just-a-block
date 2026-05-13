@@ -158,10 +158,7 @@ void Player::Render(const Grid& grid, TextOutliner& outliner) const {
                                   ::Color{0, 0, 0, 255});
 
   const std::string hp_str = std::to_string(hp_);
-  // Glyph height is smaller than nominal font_size (ascent + descent), so we
-  // can set font_size ≈ bar_h and the rendered digit still sits inside the
-  // pill while filling it visually — matches refs/player_move_anim/.
-  const int font_size = std::max(10, static_cast<int>(bar_h));
+  const int font_size = std::max(6, tuning.hp_font_size);
   const int text_w = ck::MeasureText(hp_str, font_size);
   const int text_x = static_cast<int>(bar_x + bar_w * 0.5f) - text_w / 2;
   const int text_y = static_cast<int>(bar_y + bar_h * 0.5f) - font_size / 2;
