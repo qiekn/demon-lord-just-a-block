@@ -35,8 +35,11 @@ void MainMenuLayer::OnRender() {
   // raygui style is global; each layer that draws controls is responsible for
   // asserting the style it expects. Save / restore the bits we change so
   // other raygui layers (or the next frame's default) aren't disturbed.
+  // Pixel font (fusion) renders cleanest at integer multiples of its bake
+  // size (kFontBody) — use 2x for menu prominence rather than kFontTitle
+  // (32) which would land on a 1.78x fractional scale.
   const int saved_text_size = ck::gui::GetStyle(DEFAULT, TEXT_SIZE);
-  ck::gui::SetStyle(DEFAULT, TEXT_SIZE, ck::ui::kFontTitle);
+  ck::gui::SetStyle(DEFAULT, TEXT_SIZE, ck::ui::kFontBody * 2);
 
   // Centered vertical stack of 5 buttons.
   constexpr float kBtnW = 320.0f;

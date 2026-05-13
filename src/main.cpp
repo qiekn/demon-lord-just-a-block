@@ -47,13 +47,14 @@ int main() {
 
   SetDefaultFont(noto);
 
-  // raygui gets its own atlas: fusion.ttf is the CJK pixel font we ship for
-  // the gui aesthetic. Loaded at the same atlas bake size so the spec sizes
-  // (kFontBody / kFontTitle) downsample consistently with ck::DrawText.
-  Font fusion(CK_ASSET("fonts/fusion.ttf"), ck::ui::kFontAtlasBake, codepoints);
-  auto fusion_tex = fusion.Get().texture;
-  GenTextureMipmaps(&fusion_tex);
-  SetTextureFilter(fusion_tex, TEXTURE_FILTER_TRILINEAR);
+  // raygui gets its own atlas: fusion.ttf is a pixel font, so we bake it at
+  // the actual rendered size (kFontBody) for 1:1 sampling in DrawTextEx, and
+  // use POINT filter to preserve sharp pixel edges. No mipmaps — they would
+  // smooth out exactly the pixel quality we want to keep. 18 logical px also
+  // happens to divide cleanly into 1x / 1.5x / 2x HIGHDPI framebuffer sizes,
+  // so the projection stage doesn't introduce subpixel sampling either.
+  Font fusion(CK_ASSET("fonts/fusion.ttf"), ck::ui::kFontBody, codepoints);
+  SetTextureFilter(fusion.Get().texture, TEXTURE_FILTER_POINT);
   ck::gui::SetFont(fusion.Get());
 
   ck::gui::SetStyle(DEFAULT, TEXT_SIZE, ck::ui::kFontBody);
