@@ -70,10 +70,17 @@ void TextOutliner::DrawText(const char* text, int x, int y, int font_size,
   shader_.SetValue(loc_outline_radius_, &outline_px, SHADER_UNIFORM_FLOAT);
   shader_.SetValue(loc_outline_color_, outline_color_n, SHADER_UNIFORM_VEC4);
 
-  // RT textures are stored bottom-up — negative source height flips the V so
-  // the sampled image lands right-side-up on screen.
+  // RT textures are stored bottom-up (GL convention), and BeginTextureMode
+  // flips the projection so user code wrote text at the TOP of the
+  // framebuffer — which lives at HIGH GL-y in the texture. The RT is grown
+  // to 64-px multiples and is almost always larger than the drawn region, so
+  // we must offset src.y by (rt_height - needed_h) to land on the rows where
+  // the text actually was. Negative source height keeps the V flip.
+  // The canonical raylib pattern `(0, 0, w, -h)` only works when h == rt_h.
   const ::Texture2D tex = rt_.GetTexture();
-  const ::Rectangle src{0.0f, 0.0f, static_cast<float>(needed_w),
+  const ::Rectangle src{0.0f,
+                        static_cast<float>(rt_.GetHeight() - needed_h),
+                        static_cast<float>(needed_w),
                         -static_cast<float>(needed_h)};
   const ::Vector2 dst{static_cast<float>(x - pad),
                       static_cast<float>(y - pad)};
