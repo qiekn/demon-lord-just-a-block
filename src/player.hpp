@@ -15,11 +15,12 @@ class TextOutliner;
 class Player {
  public:
   // Tunable knobs exposed publicly so ImGui (or a settings panel) can write
-  // through them without ceremony. Defaults are the gameplay-feel baseline.
+  // through them without ceremony. Defaults tuned against refs/player_move_anim/
+  // (30 fps captures, ~6 frames per move ≈ 200 ms total).
   struct Tuning {
-    float repeat_interval = 0.22f;  // seconds between auto-repeats while held
-    float sprite_duration = 0.16f;
-    float block_duration = 0.28f;
+    float repeat_interval = 0.18f;  // seconds between auto-repeats while held
+    float sprite_duration = 0.13f;
+    float block_duration = 0.20f;
     float hop_height = 0.45f;             // multiples of cell size (vertical moves)
     float hop_height_horizontal = 0.75f;  // multiples of cell size (L/R moves)
   };
