@@ -5,6 +5,7 @@
 #include <imgui_impl_opengl3.h>
 #include <GLFW/glfw3.h>
 #include <raylib.h>
+#include <rlgl.h>
 
 #include "assets.hpp"
 
@@ -80,10 +81,19 @@ void ImGuiLayer::OnImGuiBegin() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
+
+  // Dockable surface over the main viewport. PassthruCentralNode keeps the
+  // center transparent so the game stays visible behind any docked panels.
+  ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(),
+                               ImGuiDockNodeFlags_PassthruCentralNode);
 }
 
 void ImGuiLayer::OnImGuiEnd() {
   ImGui::Render();
+  // Flush raylib's pending sprite batch before ImGui draws — otherwise the
+  // batch is flushed by EndDrawing *after* ImGui renders, painting the game
+  // on top of the panels.
+  ::rlDrawRenderBatchActive();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
