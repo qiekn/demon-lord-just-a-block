@@ -8,6 +8,7 @@ add_executable(block
   imgui_layer.cpp
   log.cpp
   player.cpp
+  text_outliner.cpp
   tile_editor_layer.cpp
   window_state.cpp
 )

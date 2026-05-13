@@ -4,14 +4,17 @@
 
 #include "grid.hpp"
 #include "player.hpp"
+#include "text_outliner.hpp"
 
 namespace ck {
 
-// Player owns textures (RAII), Grid is coord-only. `delete state_` tears
-// everything down — no per-resource new/delete in OnAttach/OnDetach.
+// Player owns textures (RAII), Grid is coord-only, TextOutliner owns the
+// outline shader + RT. `delete state_` tears everything down — no per-resource
+// new/delete in OnAttach/OnDetach.
 struct GameLayer::State {
   Grid grid;
   Player player;
+  TextOutliner outliner;
   bool show_demo = false;
 
   State() : grid(11, 7, 96.0f), player({grid.Cols() / 2, grid.Rows() / 2}) {}
@@ -33,7 +36,7 @@ void GameLayer::OnUpdate(float dt) {
 
 void GameLayer::OnRender() {
   if (!state_) return;
-  state_->player.Render(state_->grid);
+  state_->player.Render(state_->grid, state_->outliner);
 }
 
 void GameLayer::OnImGuiRender() {

@@ -8,6 +8,7 @@
 #include "shapes.hpp"
 
 #include "assets.hpp"
+#include "text_outliner.hpp"
 
 namespace ck {
 
@@ -80,7 +81,7 @@ void Player::Update(float dt, const Grid& grid) {
   if (anim_t_ < 1.0f) anim_t_ = Clamp01(anim_t_ + dt / tuning.block_duration);
 }
 
-void Player::Render(const Grid& grid) const {
+void Player::Render(const Grid& grid, TextOutliner& outliner) const {
   const float cs = grid.CellSize();
   const ::Vector2 from = grid.CellCenter(prev_);
   const ::Vector2 to = grid.CellCenter(pos_);
@@ -143,13 +144,9 @@ void Player::Render(const Grid& grid) const {
   const int text_w = ck::MeasureText(hp_str, font_size);
   const int text_x = static_cast<int>(bar_x + bar_w * 0.5f) - text_w / 2;
   const int text_y = static_cast<int>(bar_y + bar_h * 0.5f) - font_size / 2;
-  const int o = std::max(1, font_size / 14);
-  for (int oy = -o; oy <= o; oy += o)
-    for (int ox = -o; ox <= o; ox += o)
-      if (ox != 0 || oy != 0)
-        ck::DrawText(hp_str, text_x + ox, text_y + oy, font_size,
-                     ::Color{0, 0, 0, 255});
-  ck::DrawText(hp_str, text_x, text_y, font_size, ck::WHITE);
+  const float outline_px = std::max(1.5f, font_size / 12.0f);
+  outliner.DrawText(hp_str.c_str(), text_x, text_y, font_size, ck::WHITE,
+                    ::Color{0, 0, 0, 255}, outline_px);
 }
 
 }  // namespace ck
