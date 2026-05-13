@@ -1,8 +1,10 @@
 #include "player.hpp"
 
 #include <algorithm>
+#include <string>
 
 #include "colors.hpp"
+#include "font_default.hpp"
 #include "shapes.hpp"
 
 #include "assets.hpp"
@@ -111,26 +113,43 @@ void Player::Render(const Grid& grid) const {
   block_.DrawPro(bg_src, bg_dst, {0, 0}, 0.0f, ck::WHITE);
   // ck::DrawRectangleLinesEx(bg_dst, 3.0f, ::Color{20, 40, 90, 255});
 
-  // Sprite, centered on hop-offset position.
-  const float sp_size = cs * 0.9f;
+  // Sprite, centered on hop-offset position. Smaller than the cell so the
+  // block frame around it stays visible — matches refs/player_move_anim/.
+  const float sp_size = cs * 0.55f;
   const ::Rectangle sp_dst{sprite_x - sp_size * 0.5f,
                             sprite_y - sp_size * 0.5f, sp_size, sp_size};
   const ::Rectangle sp_src{0, 0, static_cast<float>(sprite_.GetWidth()),
                             static_cast<float>(sprite_.GetHeight())};
   sprite_.DrawPro(sp_src, sp_dst, {0, 0}, 0.0f, ck::WHITE);
 
-  // HP bar floating above the block.
-  const float bar_w = cs * 0.86f;
-  const float bar_h = 8.0f;
+  // HP bar: rounded red pill sitting on top of the block, black outline,
+  // centered HP number with a black sample-the-neighbors text outline.
+  // All sizes are proportional to cs so the bar scales from windowed up to
+  // 4K (one cell ≈ 215 px) without going invisible or pixelating.
+  const float bar_w = cs * 0.60f;
+  const float bar_h = cs * 0.22f;
   const float bar_x = block_x - bar_w * 0.5f;
-  const float bar_y = block_y - bg_half - bar_h - 6.0f;
-  ck::DrawRectangleRec({bar_x - 2, bar_y - 2, bar_w + 4, bar_h + 4},
-                       ::Color{30, 30, 30, 220});
-  ck::DrawRectangleRec({bar_x, bar_y, bar_w, bar_h}, ::Color{60, 60, 60, 255});
-  const float ratio =
-      max_hp_ > 0 ? static_cast<float>(hp_) / static_cast<float>(max_hp_) : 0.0f;
-  ck::DrawRectangleRec({bar_x, bar_y, bar_w * ratio, bar_h},
-                       ::Color{220, 50, 50, 255});
+  const float bar_y = block_y - bg_half - bar_h * 0.5f;
+  const ::Rectangle bar{bar_x, bar_y, bar_w, bar_h};
+  const float roundness = 0.55f;
+  const int segments = 12;
+  const float stroke = std::max(2.0f, cs * 0.025f);
+  ck::DrawRectangleRounded(bar, roundness, segments, ::Color{210, 55, 55, 255});
+  ck::DrawRectangleRoundedLinesEx(bar, roundness, segments, stroke,
+                                  ::Color{0, 0, 0, 255});
+
+  const std::string hp_str = std::to_string(hp_);
+  const int font_size = std::max(8, static_cast<int>(bar_h * 0.78f));
+  const int text_w = ck::MeasureText(hp_str, font_size);
+  const int text_x = static_cast<int>(bar_x + bar_w * 0.5f) - text_w / 2;
+  const int text_y = static_cast<int>(bar_y + bar_h * 0.5f) - font_size / 2;
+  const int o = std::max(1, font_size / 14);
+  for (int oy = -o; oy <= o; oy += o)
+    for (int ox = -o; ox <= o; ox += o)
+      if (ox != 0 || oy != 0)
+        ck::DrawText(hp_str, text_x + ox, text_y + oy, font_size,
+                     ::Color{0, 0, 0, 255});
+  ck::DrawText(hp_str, text_x, text_y, font_size, ck::WHITE);
 }
 
 }  // namespace ck
