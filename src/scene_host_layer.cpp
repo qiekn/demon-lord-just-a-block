@@ -1,8 +1,8 @@
 #include "scene_host_layer.hpp"
 
 #include "application.hpp"
-#include "main_menu_scene.hpp"
-#include "scene_manager.hpp"
+#include "scenes/main_menu_scene.hpp"
+#include "scenes/scene_manager.hpp"
 
 namespace ck {
 
