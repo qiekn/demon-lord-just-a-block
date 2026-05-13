@@ -47,14 +47,15 @@ int main() {
 
   SetDefaultFont(noto);
 
-  // raygui gets its own atlas: fusion.ttf is a pixel font, so we bake it at
-  // the actual rendered size (kFontBody) for 1:1 sampling in DrawTextEx, and
-  // use POINT filter to preserve sharp pixel edges. No mipmaps — they would
-  // smooth out exactly the pixel quality we want to keep. 18 logical px also
-  // happens to divide cleanly into 1x / 1.5x / 2x HIGHDPI framebuffer sizes,
-  // so the projection stage doesn't introduce subpixel sampling either.
-  Font fusion(CK_ASSET("fonts/fusion.ttf"), ck::ui::kFontBody, codepoints);
-  SetTextureFilter(fusion.Get().texture, TEXTURE_FILTER_POINT);
+  // raygui gets its own atlas: fusion.ttf for the gui labels. Baked at the
+  // shared atlas size with mipmaps + trilinear, same as NotoSansSC — fusion
+  // turned out to not be a fixed-size pixel font (bake-at-render-size with
+  // POINT filter produced a soft, broken-looking result), so we treat it as
+  // a regular vector font.
+  Font fusion(CK_ASSET("fonts/fusion.ttf"), ck::ui::kFontAtlasBake, codepoints);
+  auto fusion_tex = fusion.Get().texture;
+  GenTextureMipmaps(&fusion_tex);
+  SetTextureFilter(fusion_tex, TEXTURE_FILTER_TRILINEAR);
   ck::gui::SetFont(fusion.Get());
 
   ck::gui::SetStyle(DEFAULT, TEXT_SIZE, ck::ui::kFontBody);
