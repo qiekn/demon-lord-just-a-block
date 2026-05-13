@@ -107,6 +107,11 @@ Application::Application(ApplicationSpec spec) : state_(new State{.spec = spec})
   SetWindowPosition(ws.x, ws.y);
   SetTargetFPS(spec.target_fps);
 
+  // Disable raylib's built-in "ESC quits the app" — WindowShouldClose()
+  // otherwise returns true on ESC, short-circuiting any scene that wants
+  // to handle ESC itself (e.g. GameplayScene → MainMenuScene).
+  SetExitKey(KEY_NULL);
+
   // With HIGHDPI raylib draws in logical coords (screen.width) and scales to
   // the framebuffer via screenScale, but GetMousePosition() returns raw GLFW
   // pixels. Invert that here so mouse coords match raylib's drawing space.
