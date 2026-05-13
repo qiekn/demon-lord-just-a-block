@@ -89,14 +89,18 @@ void Player::Render(const Grid& grid) const {
   const float block_y = Lerp(from.y, to.y, block_e);
 
   // Sprite tween: completes in sprite_duration (< block_duration) and then
-  // idles on the destination cell while the block catches up. Parabolic hop.
+  // idles on the destination cell while the block catches up. The y component
+  // uses an explicit parabola so the apex always sits above whichever of the
+  // two cells is visually higher — sprite hops UP regardless of direction.
   const float sprite_t =
       Clamp01(anim_t_ * (tuning.block_duration / tuning.sprite_duration));
   const float sprite_e = EaseOutCubic(sprite_t);
   const float arc = 4.0f * sprite_t * (1.0f - sprite_t);
   const float sprite_x = Lerp(from.x, to.x, sprite_e);
-  const float sprite_y =
-      Lerp(from.y, to.y, sprite_e) - tuning.hop_height * cs * arc;
+  const float anchor_y = std::min(from.y, to.y);
+  const float midpoint_y = 0.5f * (from.y + to.y);
+  const float apex_offset = midpoint_y - anchor_y + tuning.hop_height * cs;
+  const float sprite_y = Lerp(from.y, to.y, sprite_t) - apex_offset * arc;
 
   // Background block: textured fill + pixelated dark outline.
   const float bg_size = cs;
