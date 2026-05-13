@@ -46,9 +46,9 @@ int main() {
   SetTextureFilter(font_tex, TEXTURE_FILTER_TRILINEAR);
 
   SetDefaultFont(noto);
-  // raygui owns its own font slot — register the same atlas so ck::gui::*
-  // buttons render Chinese instead of falling back to raygui's ASCII default.
-  ck::gui::SetFont(noto.Get());
+  // raygui keeps its built-in raylib default font (pixel ASCII) — its
+  // controls render English labels in that retro style. ck::DrawText goes
+  // through SetDefaultFont above for any Chinese the rest of the game needs.
   ck::gui::SetStyle(DEFAULT, TEXT_SIZE, ck::ui::kFontBody);
   ck::gui::SetStyle(DEFAULT, TEXT_SPACING, 1);
   ck::gui::SetStyle(DEFAULT, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);

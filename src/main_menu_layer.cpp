@@ -53,20 +53,20 @@ void MainMenuLayer::OnRender() {
     return r;
   };
 
-  if (ck::gui::Button(next_rect(), "开始游戏")) {
+  if (ck::gui::Button(next_rect(), "Start Game")) {
     log::Info("MainMenu: start game");
     state_->visible = false;
   }
-  if (ck::gui::Button(next_rect(), "设置")) {
+  if (ck::gui::Button(next_rect(), "Settings")) {
     log::Info("MainMenu: settings (TODO)");
   }
-  if (ck::gui::Button(next_rect(), "成就")) {
+  if (ck::gui::Button(next_rect(), "Achievements")) {
     log::Info("MainMenu: achievements (TODO)");
   }
-  if (ck::gui::Button(next_rect(), "模组")) {
+  if (ck::gui::Button(next_rect(), "Mods")) {
     log::Info("MainMenu: mods (TODO)");
   }
-  if (ck::gui::Button(next_rect(), "退出游戏")) {
+  if (ck::gui::Button(next_rect(), "Exit")) {
     log::Info("MainMenu: exit");
     if (state_->app) state_->app->Close();
   }
