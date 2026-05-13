@@ -1,6 +1,9 @@
 # ---------------------------------------------------------------------------: Raylib-Hpp (bundles raylib via refs/raylib)
 add_subdirectory(Raylib-Hpp)
 
+# ---------------------------------------------------------------------------: Raygui-Hpp (raygui v5 wrapped as ck::gui / `import raygui;`)
+add_subdirectory(Raygui-Hpp)
+
 # ---------------------------------------------------------------------------: entt as header-only INTERFACE target
 add_library(entt INTERFACE)
 target_include_directories(entt INTERFACE
