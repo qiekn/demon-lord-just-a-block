@@ -43,7 +43,8 @@ void GameLayer::OnImGuiRender() {
     ImGui::SliderFloat("Key repeat", &t.repeat_interval, 0.05f, 0.8f, "%.2f s");
     ImGui::SliderFloat("Sprite tween", &t.sprite_duration, 0.05f, 0.6f, "%.2f s");
     ImGui::SliderFloat("Block tween", &t.block_duration, 0.05f, 0.6f, "%.2f s");
-    ImGui::SliderFloat("Hop height", &t.hop_height, 0.0f, 1.0f, "%.2f cells");
+    ImGui::SliderFloat("Hop height (V)", &t.hop_height, 0.0f, 1.5f, "%.2f cells");
+    ImGui::SliderFloat("Hop height (H)", &t.hop_height_horizontal, 0.0f, 1.5f, "%.2f cells");
     ImGui::Checkbox("ImGui demo", &state_->show_demo);
   }
   ImGui::End();
