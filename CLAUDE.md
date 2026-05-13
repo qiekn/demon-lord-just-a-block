@@ -7,9 +7,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A from-scratch remake of *卡牌魔王，只剩个头* (Steam app 3720420), originally built in Unity. Currently a scaffold: raylib window with NotoSansSC default font, spdlog logger, ImGui demo overlay, window position persistence. No gameplay yet.
 
 Near-term roadmap (in order):
-1. Basic player movement.
+1. Basic player movement — match the original feel using the frame captures in `./refs/player_move_anim/` (see "Visual Reference").
 2. Sprite + map rendering off the exported assets in `./export/`.
 3. Design pass on dodge / parry mechanics, then implementation.
+
+## Visual Reference
+
+When matching the look and feel of the original game:
+
+- **`./original/`** — local install of the shipped Unity build (`DemonLordJustABlock.exe`). Run it side-by-side for A/B comparison. Gitignored.
+- **`./refs/player_move_anim/`** — 30 fps frame captures of the original player walk cycle: `down-{1..6}.png`, `left-{1..6}.png`, `right-{1..6}.png`, `up-{1..7}.png`. Source of truth for animation timing and sprite layout. Gitignored.
+  - Don't confuse this with `deps/Raylib-Hpp/refs/raylib`, which is the wrapper's own raylib clone.
+
+**Measurements:** at 4K fullscreen, one grid cell is **215 px** (measured against the original). Use this when sizing sprites, the camera, or layout against the original.
+
+**Open visual debt** (tuning items, no PR yet):
+
+- Player sprite renders too large — currently fills the entire grid cell. Needs to be scaled down to match the original (sprite occupies clearly less than 1 cell in `refs/player_move_anim/`).
+- HP bar should be a rounded rectangle with a black outline and centered HP text. The black outline (and similar outlines on other UI) is best implemented as a shader — either an SDF-based outline or a sample-the-neighbors fragment shader.
 
 ## Build & Run
 
@@ -132,6 +147,8 @@ Two directories with distinct roles:
 - `deps/` — submodules + `CMakeLists.txt` wiring.
 - `assets/` — runtime assets (committed). Reach into via `CK_ASSET("...")` from `src/assets.hpp`.
 - `export/` — Unity asset dump (local only, gitignored).
+- `original/` — local install of the shipped game for visual reference (gitignored).
+- `refs/` — reference material like the player move-anim frame captures (gitignored).
 - `docs/` — mdBook scaffold for design notes (separate from this guide).
 
 ## Git
