@@ -47,6 +47,10 @@ class Player {
   GridCoord pos_;
   GridCoord prev_;
 
+  // Last horizontal direction the player moved in (true = right, false = left).
+  // Updated only when dx != 0 so vertical-only moves preserve facing.
+  bool facing_right_ = true;
+
   int hp_ = 5;
   int max_hp_ = 5;
 

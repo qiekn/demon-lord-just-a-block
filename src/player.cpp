@@ -48,6 +48,7 @@ bool Player::TryMove(int dx, int dy, const Grid& grid) {
   if (!grid.InBounds(next)) return false;
   prev_ = pos_;
   pos_ = next;
+  if (dx != 0) facing_right_ = dx > 0;
   anim_t_ = 0.0f;
   return true;
 }
@@ -116,10 +117,12 @@ void Player::Render(const Grid& grid, TextOutliner& outliner) const {
 
   // Sprite, centered on hop-offset position. Smaller than the cell so the
   // block frame around it stays visible — matches refs/player_move_anim/.
+  // Negative source width flips the sprite horizontally for left-facing moves.
   const float sp_size = cs * 0.55f;
   const ::Rectangle sp_dst{sprite_x - sp_size * 0.5f,
                             sprite_y - sp_size * 0.5f, sp_size, sp_size};
-  const ::Rectangle sp_src{0, 0, static_cast<float>(sprite_.GetWidth()),
+  const float sp_w = static_cast<float>(sprite_.GetWidth());
+  const ::Rectangle sp_src{0, 0, facing_right_ ? sp_w : -sp_w,
                             static_cast<float>(sprite_.GetHeight())};
   sprite_.DrawPro(sp_src, sp_dst, {0, 0}, 0.0f, ck::WHITE);
 
