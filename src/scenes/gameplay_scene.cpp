@@ -27,16 +27,34 @@ constexpr int kDefaultRows = 7;
 constexpr int kDefaultTilePx = 96;
 constexpr const char* kTileFile = "tilemap.txt";
 
-// Floor brush palette. First two form the default checkerboard pattern; the
-// rest are alternative grid sprites loaded from assets/sprites/grid/.
+// Floor brush palette. Each biome contributes an A/B pair; the Checkerboard
+// generator uses the biome of whichever brush is currently selected. Grass
+// pair sits at indices 0/1 so old tilemap.txt saves (which only know IDs 0
+// and 1) keep rendering as a grass checkerboard.
 struct TileDef {
   const char* label;
   const char* path;
 };
 
-constexpr std::array<TileDef, 2> kTiles{{
-    {"grass A", CK_ASSET("sprites/grid/grid #2327.png")},
-    {"grass B", CK_ASSET("sprites/grid/grid2 #2366.png")},
+constexpr std::array<TileDef, 18> kTiles{{
+    {"grass A",   CK_ASSET("sprites/grid/grass_a.png")},
+    {"grass B",   CK_ASSET("sprites/grid/grass_b.png")},
+    {"throne A",  CK_ASSET("sprites/grid/throne_a.png")},
+    {"throne B",  CK_ASSET("sprites/grid/throne_b.png")},
+    {"brick A",   CK_ASSET("sprites/grid/brick_a.png")},
+    {"brick B",   CK_ASSET("sprites/grid/brick_b.png")},
+    {"dirt A",    CK_ASSET("sprites/grid/dirt_a.png")},
+    {"dirt B",    CK_ASSET("sprites/grid/dirt_b.png")},
+    {"sand A",    CK_ASSET("sprites/grid/sand_a.png")},
+    {"sand B",    CK_ASSET("sprites/grid/sand_b.png")},
+    {"void A",    CK_ASSET("sprites/grid/void_a.png")},
+    {"void B",    CK_ASSET("sprites/grid/void_b.png")},
+    {"ice A",     CK_ASSET("sprites/grid/ice_a.png")},
+    {"ice B",     CK_ASSET("sprites/grid/ice_b.png")},
+    {"water A",   CK_ASSET("sprites/grid/water_a.png")},
+    {"water B",   CK_ASSET("sprites/grid/water_b.png")},
+    {"dungeon A", CK_ASSET("sprites/grid/dungeon_a.png")},
+    {"dungeon B", CK_ASSET("sprites/grid/dungeon_b.png")},
 }};
 
 }  // namespace
@@ -64,11 +82,16 @@ struct GameplayScene::State {
 
   State() : grid(11, 7, 96.0f), player({grid.Cols() / 2, grid.Rows() / 2}) {}
 
+  // Checkerboard uses the A/B pair of whichever brush is currently selected.
+  // Biomes are laid out in (A, B) pairs starting at index 0, so the A index
+  // is `brush & ~1` and B is `A | 1`.
   void Checkerboard() {
+    const int a = brush_id & ~1;
+    const int b = a | 1;
     tiles.assign(static_cast<size_t>(cols) * rows, 0);
     for (int r = 0; r < rows; ++r) {
       for (int c = 0; c < cols; ++c) {
-        tiles[r * cols + c] = (r + c) & 1;
+        tiles[r * cols + c] = ((r + c) & 1) ? b : a;
       }
     }
   }
@@ -76,6 +99,8 @@ struct GameplayScene::State {
   void Resize(int new_cols, int new_rows) {
     new_cols = std::max(1, new_cols);
     new_rows = std::max(1, new_rows);
+    const int a = brush_id & ~1;
+    const int b = a | 1;
     std::vector<int> next(static_cast<size_t>(new_cols) * new_rows, 0);
     const int copy_cols = std::min(cols, new_cols);
     const int copy_rows = std::min(rows, new_rows);
@@ -86,7 +111,8 @@ struct GameplayScene::State {
     }
     for (int r = 0; r < new_rows; ++r) {
       for (int c = 0; c < new_cols; ++c) {
-        if (r >= copy_rows || c >= copy_cols) next[r * new_cols + c] = (r + c) & 1;
+        if (r >= copy_rows || c >= copy_cols)
+          next[r * new_cols + c] = ((r + c) & 1) ? b : a;
       }
     }
     tiles = std::move(next);
@@ -147,8 +173,8 @@ void GameplayScene::OnUpdate(float dt) {
   if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
     state_->tiles[gy * state_->cols + gx] = state_->brush_id;
   } else if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-    const int other = 1 - state_->brush_id;
-    state_->tiles[gy * state_->cols + gx] = other;
+    // RMB paints the OTHER half of the brush's biome (A↔B).
+    state_->tiles[gy * state_->cols + gx] = state_->brush_id ^ 1;
   }
 }
 
@@ -253,8 +279,9 @@ void GameplayScene::OnImGuiRender() {
   constexpr ImVec2 kBrushSize(48, 48);
   const ImVec4 kSelectedBg(1.0f, 0.85f, 0.2f, 0.85f);
   const ImVec4 kSelectedHover(1.0f, 0.9f, 0.3f, 1.0f);
+  // Two columns: each row is one biome's A/B pair.
   for (int i = 0; i < static_cast<int>(kTiles.size()); ++i) {
-    if (i != 0) ImGui::SameLine();
+    if (i % 2 == 1) ImGui::SameLine();
     if (!state_->textures[i]) continue;
     const bool selected = (state_->brush_id == i);
     ImGui::PushID(i);
