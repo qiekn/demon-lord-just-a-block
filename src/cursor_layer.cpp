@@ -38,15 +38,13 @@ void CursorLayer::OnDetach() {
 void CursorLayer::OnImGuiRender() {
   if (!state_) return;
 
-  if (ImGui::Begin("Cursor / 光标")) {
+  if (ImGui::Begin("Cursor")) {
     ImGui::Checkbox("Use custom cursor", &state_->enabled);
-    ImGui::TextDisabled("Sprite shows over the game viewport;\nthe OS cursor returns over ImGui windows.");
+    ImGui::TextDisabled("Hides the OS cursor everywhere (including over\nImGui panels) and draws the sprite instead.");
   }
   ImGui::End();
 
-  const ImGuiIO& io = ImGui::GetIO();
-  const bool over_imgui = io.WantCaptureMouse;
-  const bool show_sprite = state_->enabled && state_->loaded && !over_imgui;
+  const bool show_sprite = state_->enabled && state_->loaded;
   const bool want_os_cursor = !show_sprite;
 
   if (want_os_cursor != state_->os_cursor_visible) {
@@ -59,7 +57,7 @@ void CursorLayer::OnImGuiRender() {
     // ImGui foreground drawlist uses DisplaySize (framebuffer-pixel) space.
     // raylib's GetMousePosition is scaled to logical coords by Application,
     // so use ImGui's mouse pos here to stay in the same coord system.
-    const ImVec2 m = io.MousePos;
+    const ImVec2 m = ImGui::GetIO().MousePos;
     const float w = static_cast<float>(state_->tex.width);
     const float h = static_cast<float>(state_->tex.height);
     ImGui::GetForegroundDrawList()->AddImage(
