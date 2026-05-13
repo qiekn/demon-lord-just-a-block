@@ -4,8 +4,9 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <GLFW/glfw3.h>
-#include <raylib.h>
 #include <rlgl.h>
+
+import raylib;
 
 #include "assets.hpp"
 
@@ -57,7 +58,7 @@ void ImGuiLayer::OnAttach() {
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
   io.IniFilename = "imgui.ini";
 
-  const float dpi = ::GetWindowScaleDPI().x;
+  const float dpi = GetWindowScaleDPI().x;
   ImFontConfig cfg;
   cfg.OversampleH = 2;
   cfg.OversampleV = 2;
@@ -90,7 +91,7 @@ void ImGuiLayer::OnImGuiBegin() {
   // Toggle on backtick. Read after NewFrame so ImGui's input state for this
   // frame is settled; raylib's key state is independent so the order doesn't
   // matter for the IsKeyPressed call itself.
-  if (::IsKeyPressed(KEY_GRAVE)) g_panels_visible = !g_panels_visible;
+  if (IsKeyPressed(KEY_GRAVE)) g_panels_visible = !g_panels_visible;
 
   if (!g_panels_visible) return;
 

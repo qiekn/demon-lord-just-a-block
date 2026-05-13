@@ -1,7 +1,8 @@
 #include "cursor_layer.hpp"
 
 #include <imgui.h>
-#include <raylib.h>
+
+import raylib;
 
 #include "assets.hpp"
 #include "imgui_layer.hpp"
@@ -10,8 +11,7 @@
 namespace ck {
 
 struct CursorLayer::State {
-  Texture2D tex{};
-  bool loaded = false;
+  raii::Texture tex;
   bool enabled = true;
   float scale = 0.55f;
   // Track OS cursor visibility so we don't spam GLFW each frame.
@@ -19,11 +19,9 @@ struct CursorLayer::State {
 };
 
 void CursorLayer::OnAttach() {
-  state_ = new State{};
-  state_->tex = ::LoadTexture(CK_ASSET("sprites/cursor.png"));
-  state_->loaded = state_->tex.id != 0;
-  if (state_->loaded) {
-    ::SetTextureFilter(state_->tex, TEXTURE_FILTER_BILINEAR);
+  state_ = new State{.tex = raii::Texture{CK_ASSET("sprites/cursor.png")}};
+  if (state_->tex) {
+    state_->tex.SetFilter(TEXTURE_FILTER_BILINEAR);
   } else {
     log::Warn("CursorLayer: failed to load assets/sprites/cursor.png");
   }
@@ -31,8 +29,7 @@ void CursorLayer::OnAttach() {
 
 void CursorLayer::OnDetach() {
   if (!state_) return;
-  if (!state_->os_cursor_visible) ::ShowCursor();
-  if (state_->loaded) ::UnloadTexture(state_->tex);
+  if (!state_->os_cursor_visible) ShowCursor();
   delete state_;
   state_ = nullptr;
 }
@@ -63,12 +60,12 @@ void CursorLayer::OnImGuiRender() {
     io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
   }
 
-  const bool show_sprite = state_->enabled && state_->loaded;
+  const bool show_sprite = state_->enabled && state_->tex;
   const bool want_os_cursor = !show_sprite;
 
   if (want_os_cursor != state_->os_cursor_visible) {
-    if (want_os_cursor) ::ShowCursor();
-    else ::HideCursor();
+    if (want_os_cursor) ShowCursor();
+    else HideCursor();
     state_->os_cursor_visible = want_os_cursor;
   }
 
@@ -77,10 +74,10 @@ void CursorLayer::OnImGuiRender() {
     // raylib's GetMousePosition is scaled to logical coords by Application,
     // so use ImGui's mouse pos here to stay in the same coord system.
     const ImVec2 m = io.MousePos;
-    const float w = static_cast<float>(state_->tex.width) * state_->scale;
-    const float h = static_cast<float>(state_->tex.height) * state_->scale;
+    const float w = static_cast<float>(state_->tex.GetWidth()) * state_->scale;
+    const float h = static_cast<float>(state_->tex.GetHeight()) * state_->scale;
     ImGui::GetForegroundDrawList()->AddImage(
-        static_cast<ImTextureID>(state_->tex.id),
+        static_cast<ImTextureID>(state_->tex.Get().id),
         ImVec2(m.x, m.y), ImVec2(m.x + w, m.y + h));
   }
 }

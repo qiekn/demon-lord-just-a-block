@@ -6,9 +6,8 @@
 #include <vector>
 
 #include <imgui.h>
-#include <raylib.h>
 
-#include "colors.hpp"
+import raylib;
 
 #include "assets.hpp"
 #include "grid.hpp"
@@ -43,17 +42,15 @@ constexpr std::array<TileDef, 2> kTiles{{
 }  // namespace
 
 // Player owns its textures (RAII Texture). Tile textures are managed here
-// (LoadTexture / UnloadTexture inside OnEnter / OnExit). Both share the same
-// scene lifetime, so OnExit fully restores the GL state to "no GameplayScene
-// resources loaded".
+// via ck::raii::Texture; both share the same scene lifetime, so OnExit fully
+// restores the GL state to "no GameplayScene resources loaded".
 struct GameplayScene::State {
   Grid grid;
   Player player;
   bool show_demo = false;
 
   // Tile editor data.
-  std::array<Texture2D, kTiles.size()> textures{};
-  std::array<bool, kTiles.size()> loaded{};
+  std::array<raii::Texture, kTiles.size()> textures;
   int cols = kDefaultCols;
   int rows = kDefaultRows;
   int tile_px = kDefaultTilePx;
@@ -99,8 +96,8 @@ struct GameplayScene::State {
 
   void RecomputeOriginIfCentered() {
     if (!center) return;
-    origin_x = (::GetScreenWidth() - cols * tile_px) / 2;
-    origin_y = (::GetScreenHeight() - rows * tile_px) / 2;
+    origin_x = (rl::GetScreenWidth() - cols * tile_px) / 2;
+    origin_y = (rl::GetScreenHeight() - rows * tile_px) / 2;
   }
 };
 
@@ -110,10 +107,9 @@ void GameplayScene::OnEnter() {
   state_ = new State{};
 
   for (size_t i = 0; i < kTiles.size(); ++i) {
-    state_->textures[i] = ::LoadTexture(kTiles[i].path);
-    state_->loaded[i] = state_->textures[i].id != 0;
-    if (state_->loaded[i]) {
-      ::SetTextureFilter(state_->textures[i], TEXTURE_FILTER_BILINEAR);
+    state_->textures[i].Load(kTiles[i].path);
+    if (state_->textures[i]) {
+      state_->textures[i].SetFilter(TEXTURE_FILTER_BILINEAR);
     } else {
       log::Warn("GameplayScene: failed to load a floor tile");
     }
@@ -124,9 +120,6 @@ void GameplayScene::OnEnter() {
 
 void GameplayScene::OnExit() {
   if (!state_) return;
-  for (size_t i = 0; i < kTiles.size(); ++i) {
-    if (state_->loaded[i]) ::UnloadTexture(state_->textures[i]);
-  }
   delete state_;
   state_ = nullptr;
 }
@@ -134,7 +127,7 @@ void GameplayScene::OnExit() {
 void GameplayScene::OnUpdate(float dt) {
   if (!state_) return;
 
-  if (::IsKeyPressed(KEY_ESCAPE)) {
+  if (IsKeyPressed(KEY_ESCAPE)) {
     Manager()->Switch<MainMenuScene>();
     return;
   }
@@ -146,14 +139,14 @@ void GameplayScene::OnUpdate(float dt) {
   const ImGuiIO& io = ImGui::GetIO();
   if (io.WantCaptureMouse) return;
 
-  const Vector2 m = ::GetMousePosition();
+  const Vector2 m = GetMousePosition();
   const int gx = (static_cast<int>(m.x) - state_->origin_x) / state_->tile_px;
   const int gy = (static_cast<int>(m.y) - state_->origin_y) / state_->tile_px;
   if (gx < 0 || gx >= state_->cols || gy < 0 || gy >= state_->rows) return;
 
-  if (::IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+  if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
     state_->tiles[gy * state_->cols + gx] = state_->brush_id;
-  } else if (::IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+  } else if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
     const int other = 1 - state_->brush_id;
     state_->tiles[gy * state_->cols + gx] = other;
   }
@@ -169,14 +162,14 @@ void GameplayScene::OnRender() {
   for (int r = 0; r < state_->rows; ++r) {
     for (int c = 0; c < state_->cols; ++c) {
       const int id = state_->tiles[r * state_->cols + c];
-      if (id < 0 || id >= static_cast<int>(kTiles.size()) || !state_->loaded[id]) continue;
-      const Texture2D& tex = state_->textures[id];
-      const ::Rectangle src{0, 0, static_cast<float>(tex.width),
-                            static_cast<float>(tex.height)};
-      const ::Rectangle dst{static_cast<float>(ox + c * tp),
-                            static_cast<float>(oy + r * tp),
-                            static_cast<float>(tp), static_cast<float>(tp)};
-      ::DrawTexturePro(tex, src, dst, {0, 0}, 0.0f, ck::WHITE);
+      if (id < 0 || id >= static_cast<int>(kTiles.size()) || !state_->textures[id]) continue;
+      const auto& tex = state_->textures[id];
+      const Rectangle src{0, 0, static_cast<float>(tex.GetWidth()),
+                          static_cast<float>(tex.GetHeight())};
+      const Rectangle dst{static_cast<float>(ox + c * tp),
+                          static_cast<float>(oy + r * tp),
+                          static_cast<float>(tp), static_cast<float>(tp)};
+      tex.DrawPro(src, dst, {0, 0}, 0.0f, WHITE);
     }
   }
 
@@ -184,32 +177,32 @@ void GameplayScene::OnRender() {
     const Color gc{200, 200, 200, 64};
     for (int c = 0; c <= state_->cols; ++c) {
       const int x = ox + c * tp;
-      ::DrawLine(x, oy, x, oy + state_->rows * tp, gc);
+      DrawLine(x, oy, x, oy + state_->rows * tp, gc);
     }
     for (int r = 0; r <= state_->rows; ++r) {
       const int y = oy + r * tp;
-      ::DrawLine(ox, y, ox + state_->cols * tp, y, gc);
+      DrawLine(ox, y, ox + state_->cols * tp, y, gc);
     }
   }
 
   // Hover highlight + brush preview (Baba-style).
   if (state_->paint_mode && !ImGui::GetIO().WantCaptureMouse) {
-    const Vector2 m = ::GetMousePosition();
+    const Vector2 m = GetMousePosition();
     const int gx = (static_cast<int>(m.x) - ox) / tp;
     const int gy = (static_cast<int>(m.y) - oy) / tp;
     if (gx >= 0 && gx < state_->cols && gy >= 0 && gy < state_->rows) {
       const int bid = state_->brush_id;
-      if (bid >= 0 && bid < static_cast<int>(kTiles.size()) && state_->loaded[bid]) {
-        const Texture2D& tex = state_->textures[bid];
-        const ::Rectangle src{0, 0, static_cast<float>(tex.width),
-                              static_cast<float>(tex.height)};
-        const ::Rectangle dst{static_cast<float>(ox + gx * tp),
-                              static_cast<float>(oy + gy * tp),
-                              static_cast<float>(tp), static_cast<float>(tp)};
-        ::DrawTexturePro(tex, src, dst, {0, 0}, 0.0f, Color{255, 255, 255, 160});
+      if (bid >= 0 && bid < static_cast<int>(kTiles.size()) && state_->textures[bid]) {
+        const auto& tex = state_->textures[bid];
+        const Rectangle src{0, 0, static_cast<float>(tex.GetWidth()),
+                            static_cast<float>(tex.GetHeight())};
+        const Rectangle dst{static_cast<float>(ox + gx * tp),
+                            static_cast<float>(oy + gy * tp),
+                            static_cast<float>(tp), static_cast<float>(tp)};
+        tex.DrawPro(src, dst, {0, 0}, 0.0f, Color{255, 255, 255, 160});
       }
-      ::DrawRectangleLines(ox + gx * tp, oy + gy * tp, tp, tp,
-                           Color{255, 220, 0, 255});
+      DrawRectangleLines(ox + gx * tp, oy + gy * tp, tp, tp,
+                         Color{255, 220, 0, 255});
     }
   }
 
@@ -262,7 +255,7 @@ void GameplayScene::OnImGuiRender() {
   const ImVec4 kSelectedHover(1.0f, 0.9f, 0.3f, 1.0f);
   for (int i = 0; i < static_cast<int>(kTiles.size()); ++i) {
     if (i != 0) ImGui::SameLine();
-    if (!state_->loaded[i]) continue;
+    if (!state_->textures[i]) continue;
     const bool selected = (state_->brush_id == i);
     ImGui::PushID(i);
     if (selected) {
@@ -271,7 +264,7 @@ void GameplayScene::OnImGuiRender() {
       ImGui::PushStyleColor(ImGuiCol_ButtonActive, kSelectedHover);
     }
     if (ImGui::ImageButton("##tile",
-                           static_cast<ImTextureID>(state_->textures[i].id),
+                           static_cast<ImTextureID>(state_->textures[i].Get().id),
                            kBrushSize)) {
       state_->brush_id = i;
     }
