@@ -50,6 +50,9 @@ void ImGuiLayer::OnAttach() {
   ImGuiIO& io = ImGui::GetIO();
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+  // CursorLayer draws a custom sprite and calls HideCursor(); without this
+  // flag the glfw backend re-shows an OS cursor every frame via glfwSetCursor.
+  io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
   io.IniFilename = "imgui.ini";
 
   const float dpi = ::GetWindowScaleDPI().x;
