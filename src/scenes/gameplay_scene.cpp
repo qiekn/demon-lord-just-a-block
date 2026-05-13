@@ -276,13 +276,22 @@ void GameplayScene::OnImGuiRender() {
   }
 
   ImGui::SeparatorText("Brush");
-  constexpr ImVec2 kBrushSize(48, 48);
+  constexpr ImVec2 kBrushSize(40, 40);
   const ImVec4 kSelectedBg(1.0f, 0.85f, 0.2f, 0.85f);
   const ImVec4 kSelectedHover(1.0f, 0.9f, 0.3f, 1.0f);
-  // Two columns: each row is one biome's A/B pair.
+  // Flow horizontally and wrap to next line when the next button would
+  // overflow the available width — denser than fixed 2-per-row, scales with
+  // panel width.
+  const ImGuiStyle& style = ImGui::GetStyle();
+  const float button_stride = kBrushSize.x + style.FramePadding.x * 2.0f + style.ItemSpacing.x;
+  const float avail = ImGui::GetContentRegionAvail().x;
+  float row_x = 0.0f;
   for (int i = 0; i < static_cast<int>(kTiles.size()); ++i) {
-    if (i % 2 == 1) ImGui::SameLine();
     if (!state_->textures[i]) continue;
+    if (row_x > 0.0f) {
+      if (row_x + button_stride > avail) row_x = 0.0f;
+      else ImGui::SameLine();
+    }
     const bool selected = (state_->brush_id == i);
     ImGui::PushID(i);
     if (selected) {
@@ -298,6 +307,7 @@ void GameplayScene::OnImGuiRender() {
     if (selected) ImGui::PopStyleColor(3);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", kTiles[i].label);
     ImGui::PopID();
+    row_x += button_stride;
   }
   ImGui::TextDisabled("Selected: %s", kTiles[state_->brush_id].label);
 
