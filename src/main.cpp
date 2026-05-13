@@ -3,6 +3,7 @@ import raylib;
 
 #include "application.hpp"
 #include "assets.hpp"
+#include "cursor_layer.hpp"
 #include "game_layer.hpp"
 #include "imgui_layer.hpp"
 #include "log.hpp"
@@ -36,6 +37,7 @@ int main() {
   app.PushOverlay(new ck::ImGuiLayer);
   app.PushLayer(new ck::TileEditorLayer);
   app.PushLayer(new ck::GameLayer);
+  app.PushOverlay(new ck::CursorLayer);
 
   app.Run();
 

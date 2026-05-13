@@ -2,6 +2,7 @@ add_executable(block
   main.cpp
   application.cpp
   assets.cpp
+  cursor_layer.cpp
   game_layer.cpp
   grid.cpp
   imgui_layer.cpp
