@@ -7,8 +7,9 @@
 #include <system_error>
 #include <vector>
 
-#include <raylib.h>
+import raylib;
 
+#include "assets.hpp"
 #include "layer.hpp"
 #include "log.hpp"
 #include "window_state.hpp"
@@ -28,7 +29,7 @@ namespace fs = std::filesystem;
 void AnchorWorkingDirectory() {
   std::error_code ec;
   const fs::path cwd = fs::current_path(ec);
-  const fs::path exe_dir = fs::path{::GetApplicationDirectory()};
+  const fs::path exe_dir = fs::path{GetApplicationDirectory()};
 
   const fs::path candidates[] = {cwd, exe_dir, exe_dir / ".."};
   for (const auto& base : candidates) {
@@ -88,6 +89,9 @@ class LayerStack {
 
 struct Application::State {
   ApplicationSpec spec;
+  // AudioDevice declared before LayerStack so layer-owned ck::raii::Sound
+  // resources are torn down BEFORE the audio device closes.
+  raii::AudioDevice audio;
   LayerStack layers;
   bool running = true;
 };
@@ -103,9 +107,16 @@ Application::Application(ApplicationSpec spec) : state_(new State{.spec = spec})
   // Restore previous window geometry; LoadWindowState returns sensible
   // defaults if the state file is missing or malformed.
   const WindowState ws = LoadWindowState(kWindowStateFile);
-  InitWindow(ws.w, ws.h, spec.name);
-  SetWindowPosition(ws.x, ws.y);
+  rl::InitWindow(ws.w, ws.h, spec.name);
+  rl::SetWindowPosition(ws.x, ws.y);
   SetTargetFPS(spec.target_fps);
+
+  // Window icon. Loaded after InitWindow because SetWindowIcon forwards to
+  // the GLFW window handle. ck::raii::Image unloads the pixel data when it
+  // goes out of scope — raylib copies internally during SetWindowIcon.
+  raii::Image icon(CK_ASSET("sprites/icon.png"));
+  if (icon) rl::SetWindowIcon(icon.Get());
+  else log::Warn("Failed to load window icon");
 
   // Disable raylib's built-in "ESC quits the app" — WindowShouldClose()
   // otherwise returns true on ESC, short-circuiting any scene that wants
@@ -125,13 +136,13 @@ Application::Application(ApplicationSpec spec) : state_(new State{.spec = spec})
 
 Application::~Application() {
   // Capture geometry before CloseWindow tears down GLFW.
-  const Vector2 pos = GetWindowPosition();
+  const Vector2 pos = rl::GetWindowPosition();
   SaveWindowState(kWindowStateFile, {.x = static_cast<int>(pos.x),
                                      .y = static_cast<int>(pos.y),
-                                     .w = GetScreenWidth(),
-                                     .h = GetScreenHeight()});
+                                     .w = rl::GetScreenWidth(),
+                                     .h = rl::GetScreenHeight()});
   state_->layers.Clear();
-  CloseWindow();
+  rl::CloseWindow();
   log::Info("Application shut down");
   delete state_;
 }
@@ -145,7 +156,7 @@ Layer* Application::PushOverlay(Layer* overlay) {
 }
 
 void Application::Run() {
-  while (!WindowShouldClose() && state_->running) {
+  while (!rl::WindowShouldClose() && state_->running) {
     const float dt = GetFrameTime();
     for (auto& layer : state_->layers) layer->OnUpdate(dt);
 

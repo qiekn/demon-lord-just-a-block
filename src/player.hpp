@@ -4,6 +4,7 @@
 // drives input, tweens position with a hopping sprite over a draggier
 // background block so the two visibly desync mid-step.
 
+#include "sound.hpp"
 #include "texture.hpp"
 
 #include "grid.hpp"
@@ -77,6 +78,7 @@ class Player {
 
   ::ck::raii::Texture sprite_;
   ::ck::raii::Texture block_;
+  ::ck::raii::Sound move_sound_;
 };
 
 }  // namespace ck

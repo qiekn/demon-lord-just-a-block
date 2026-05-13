@@ -32,7 +32,8 @@ Player::Player(GridCoord start)
     : pos_(start),
       prev_(start),
       sprite_(CK_ASSET("sprites/player.png")),
-      block_(CK_ASSET("sprites/cards/card100.png")) {
+      block_(CK_ASSET("sprites/cards/card100.png")),
+      move_sound_(CK_ASSET("sounds/moving.wav")) {
   sprite_.SetFilter(::TEXTURE_FILTER_BILINEAR);
   block_.SetFilter(::TEXTURE_FILTER_BILINEAR);
 }
@@ -48,6 +49,7 @@ bool Player::TryMove(int dx, int dy, const Grid& grid) {
   pos_ = next;
   if (dx != 0) facing_right_ = dx > 0;
   anim_t_ = 0.0f;
+  move_sound_.Play();
   return true;
 }
 
