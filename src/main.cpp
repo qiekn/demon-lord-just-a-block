@@ -46,9 +46,16 @@ int main() {
   SetTextureFilter(font_tex, TEXTURE_FILTER_TRILINEAR);
 
   SetDefaultFont(noto);
-  // raygui keeps its built-in raylib default font (pixel ASCII) — its
-  // controls render English labels in that retro style. ck::DrawText goes
-  // through SetDefaultFont above for any Chinese the rest of the game needs.
+
+  // raygui gets its own atlas: fusion.ttf is the CJK pixel font we ship for
+  // the gui aesthetic. Loaded at the same atlas bake size so the spec sizes
+  // (kFontBody / kFontTitle) downsample consistently with ck::DrawText.
+  Font fusion(CK_ASSET("fonts/fusion.ttf"), ck::ui::kFontAtlasBake, codepoints);
+  auto fusion_tex = fusion.Get().texture;
+  GenTextureMipmaps(&fusion_tex);
+  SetTextureFilter(fusion_tex, TEXTURE_FILTER_TRILINEAR);
+  ck::gui::SetFont(fusion.Get());
+
   ck::gui::SetStyle(DEFAULT, TEXT_SIZE, ck::ui::kFontBody);
   ck::gui::SetStyle(DEFAULT, TEXT_SPACING, 1);
   ck::gui::SetStyle(DEFAULT, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
