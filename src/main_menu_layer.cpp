@@ -5,6 +5,7 @@
 #include "raygui-hpp/raygui.hpp"
 
 #include "application.hpp"
+#include "font_spec.hpp"
 #include "log.hpp"
 
 namespace ck {
@@ -19,15 +20,7 @@ MainMenuLayer::MainMenuLayer(Application* app)
 
 MainMenuLayer::~MainMenuLayer() { delete state_; }
 
-void MainMenuLayer::OnAttach() {
-  // Slightly larger control text than raygui's 10px default so Chinese
-  // glyphs are legible against the NotoSansSC atlas (loaded at baseSize 64
-  // by main.cpp). The font itself is registered via ck::gui::SetFont() in
-  // main.cpp so every Gui control picks it up.
-  ck::gui::SetStyle(DEFAULT, TEXT_SIZE, 28);
-  ck::gui::SetStyle(DEFAULT, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
-}
-
+void MainMenuLayer::OnAttach() {}
 void MainMenuLayer::OnDetach() {}
 
 void MainMenuLayer::OnRender() {
@@ -38,6 +31,12 @@ void MainMenuLayer::OnRender() {
 
   // Dim whatever the gameplay layers drew underneath.
   ::DrawRectangle(0, 0, static_cast<int>(w), static_cast<int>(h), ::Color{0, 0, 0, 200});
+
+  // raygui style is global; each layer that draws controls is responsible for
+  // asserting the style it expects. Save / restore the bits we change so
+  // other raygui layers (or the next frame's default) aren't disturbed.
+  const int saved_text_size = ck::gui::GetStyle(DEFAULT, TEXT_SIZE);
+  ck::gui::SetStyle(DEFAULT, TEXT_SIZE, ck::ui::kFontTitle);
 
   // Centered vertical stack of 5 buttons.
   constexpr float kBtnW = 320.0f;
@@ -71,6 +70,8 @@ void MainMenuLayer::OnRender() {
     log::Info("MainMenu: exit");
     if (state_->app) state_->app->Close();
   }
+
+  ck::gui::SetStyle(DEFAULT, TEXT_SIZE, saved_text_size);
 }
 
 bool MainMenuLayer::IsVisible() const { return state_ && state_->visible; }

@@ -5,6 +5,7 @@ import raygui;
 #include "application.hpp"
 #include "assets.hpp"
 #include "cursor_layer.hpp"
+#include "font_spec.hpp"
 #include "game_layer.hpp"
 #include "imgui_layer.hpp"
 #include "log.hpp"
@@ -32,12 +33,25 @@ int main() {
   // and destructed before Application's destructor closes that Window. The
   // declaration order below + standard reverse-destruction order matches.
   auto codepoints = LoadCodepoints(ReadFile(CK_ASSET("zh-sc-3500.txt")));
-  Font noto(CK_ASSET("fonts/NotoSansSC-Regular.ttf"), 64, codepoints);
-  SetTextureFilter(noto.Get().texture, TEXTURE_FILTER_BILINEAR);
+  Font noto(CK_ASSET("fonts/NotoSansSC-Regular.ttf"), ck::ui::kFontAtlasBake, codepoints);
+
+  // Mipmaps + trilinear keep glyphs crisp when raygui / ck::DrawText render
+  // at sizes smaller than the atlas (e.g. body 18 sampled from a 64-px bake).
+  // GenTextureMipmaps mutates the GL texture by id, so even though we pass a
+  // local copy of ::Texture2D, the GL state is the one that persists — and
+  // SetTextureFilter on the same copy then sees mipmaps>1 and configures the
+  // GL filter accordingly.
+  auto font_tex = noto.Get().texture;
+  GenTextureMipmaps(&font_tex);
+  SetTextureFilter(font_tex, TEXTURE_FILTER_TRILINEAR);
+
   SetDefaultFont(noto);
   // raygui owns its own font slot — register the same atlas so ck::gui::*
   // buttons render Chinese instead of falling back to raygui's ASCII default.
   ck::gui::SetFont(noto.Get());
+  ck::gui::SetStyle(DEFAULT, TEXT_SIZE, ck::ui::kFontBody);
+  ck::gui::SetStyle(DEFAULT, TEXT_SPACING, 1);
+  ck::gui::SetStyle(DEFAULT, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
 
   app.PushOverlay(new ck::ImGuiLayer);
   app.PushLayer(new ck::TileEditorLayer);
