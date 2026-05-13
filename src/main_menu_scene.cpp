@@ -1,40 +1,23 @@
-#include "main_menu_layer.hpp"
+#include "main_menu_scene.hpp"
 
 #include <raylib.h>
 
 #include "raygui-hpp/raygui.hpp"
 
-#include "application.hpp"
 #include "font_spec.hpp"
+#include "gameplay_scene.hpp"
 #include "log.hpp"
+#include "scene_manager.hpp"
 
 namespace ck {
 
-struct MainMenuLayer::State {
-  Application* app = nullptr;
-  bool visible = true;
-};
-
-MainMenuLayer::MainMenuLayer(Application* app)
-    : Layer("MainMenuLayer"), state_(new State{.app = app}) {}
-
-MainMenuLayer::~MainMenuLayer() { delete state_; }
-
-void MainMenuLayer::OnAttach() {}
-void MainMenuLayer::OnDetach() {}
-
-void MainMenuLayer::OnRender() {
-  if (!state_->visible) return;
-
+void MainMenuScene::OnRender() {
   const float w = static_cast<float>(::GetScreenWidth());
   const float h = static_cast<float>(::GetScreenHeight());
 
-  // Dim whatever the gameplay layers drew underneath.
-  ::DrawRectangle(0, 0, static_cast<int>(w), static_cast<int>(h), ::Color{0, 0, 0, 200});
-
   // raygui style is global; each layer that draws controls is responsible for
   // asserting the style it expects. Save / restore the bits we change so
-  // other raygui layers (or the next frame's default) aren't disturbed.
+  // other raygui consumers (or the next frame's default) aren't disturbed.
   const int saved_text_size = ck::gui::GetStyle(DEFAULT, TEXT_SIZE);
   ck::gui::SetStyle(DEFAULT, TEXT_SIZE, ck::ui::kFontTitle);
 
@@ -55,7 +38,7 @@ void MainMenuLayer::OnRender() {
 
   if (ck::gui::Button(next_rect(), "开始游戏")) {
     log::Info("MainMenu: start game");
-    state_->visible = false;
+    Manager()->Switch<GameplayScene>();
   }
   if (ck::gui::Button(next_rect(), "设置")) {
     log::Info("MainMenu: settings (TODO)");
@@ -68,18 +51,10 @@ void MainMenuLayer::OnRender() {
   }
   if (ck::gui::Button(next_rect(), "退出游戏")) {
     log::Info("MainMenu: exit");
-    if (state_->app) state_->app->Close();
+    Manager()->RequestQuit();
   }
 
   ck::gui::SetStyle(DEFAULT, TEXT_SIZE, saved_text_size);
-}
-
-bool MainMenuLayer::IsVisible() const { return state_ && state_->visible; }
-void MainMenuLayer::Show() {
-  if (state_) state_->visible = true;
-}
-void MainMenuLayer::Hide() {
-  if (state_) state_->visible = false;
 }
 
 }  // namespace ck

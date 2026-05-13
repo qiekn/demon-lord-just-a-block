@@ -3,13 +3,14 @@ add_executable(block
   application.cpp
   assets.cpp
   cursor_layer.cpp
-  game_layer.cpp
+  gameplay_scene.cpp
   grid.cpp
   imgui_layer.cpp
   log.cpp
-  main_menu_layer.cpp
+  main_menu_scene.cpp
   player.cpp
-  tile_editor_layer.cpp
+  scene_host_layer.cpp
+  scene_manager.cpp
   window_state.cpp
 )
 

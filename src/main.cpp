@@ -6,11 +6,9 @@ import raygui;
 #include "assets.hpp"
 #include "cursor_layer.hpp"
 #include "font_spec.hpp"
-#include "game_layer.hpp"
 #include "imgui_layer.hpp"
 #include "log.hpp"
-#include "main_menu_layer.hpp"
-#include "tile_editor_layer.hpp"
+#include "scene_host_layer.hpp"
 
 using namespace ck;
 using namespace ck::raii;
@@ -63,9 +61,7 @@ int main() {
   ck::gui::SetStyle(DEFAULT, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
 
   app.PushOverlay(new ck::ImGuiLayer);
-  app.PushLayer(new ck::TileEditorLayer);
-  app.PushLayer(new ck::GameLayer);
-  app.PushOverlay(new ck::MainMenuLayer(&app));
+  app.PushLayer(new ck::SceneHostLayer(&app));
   app.PushOverlay(new ck::CursorLayer);
 
   app.Run();

@@ -141,11 +141,6 @@ Layer* Application::PushOverlay(Layer* overlay) {
 
 void Application::Run() {
   while (!WindowShouldClose() && state_->running) {
-    if (IsKeyPressed(KEY_ESCAPE)) {
-      Close();
-      break;
-    }
-
     const float dt = GetFrameTime();
     for (auto& layer : state_->layers) layer->OnUpdate(dt);
 

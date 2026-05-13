@@ -1,4 +1,4 @@
-#include "tile_editor_layer.hpp"
+#include "gameplay_scene.hpp"
 
 #include <algorithm>
 #include <array>
@@ -8,8 +8,15 @@
 #include <imgui.h>
 #include <raylib.h>
 
+#include "colors.hpp"
+
 #include "assets.hpp"
+#include "grid.hpp"
+#include "imgui_layer.hpp"
 #include "log.hpp"
+#include "main_menu_scene.hpp"
+#include "player.hpp"
+#include "scene_manager.hpp"
 
 namespace ck {
 
@@ -35,23 +42,30 @@ constexpr std::array<TileDef, 2> kTiles{{
 
 }  // namespace
 
-struct TileEditorLayer::State {
+// Player owns its textures (RAII Texture). Tile textures are managed here
+// (LoadTexture / UnloadTexture inside OnEnter / OnExit). Both share the same
+// scene lifetime, so OnExit fully restores the GL state to "no GameplayScene
+// resources loaded".
+struct GameplayScene::State {
+  Grid grid;
+  Player player;
+  bool show_demo = false;
+
+  // Tile editor data.
   std::array<Texture2D, kTiles.size()> textures{};
   std::array<bool, kTiles.size()> loaded{};
-
   int cols = kDefaultCols;
   int rows = kDefaultRows;
   int tile_px = kDefaultTilePx;
   bool center = true;
   int origin_x = 0;
   int origin_y = 0;
-
-  // Row-major: tiles[r * cols + c]. Values index kTiles[].
   std::vector<int> tiles;
-
   int brush_id = 0;
   bool show_grid = false;
   bool paint_mode = true;
+
+  State() : grid(11, 7, 96.0f), player({grid.Cols() / 2, grid.Rows() / 2}) {}
 
   void Checkerboard() {
     tiles.assign(static_cast<size_t>(cols) * rows, 0);
@@ -73,7 +87,6 @@ struct TileEditorLayer::State {
         next[r * new_cols + c] = tiles[r * cols + c];
       }
     }
-    // Fill the new region with checkerboard so resizing extends the pattern.
     for (int r = 0; r < new_rows; ++r) {
       for (int c = 0; c < new_cols; ++c) {
         if (r >= copy_rows || c >= copy_cols) next[r * new_cols + c] = (r + c) & 1;
@@ -91,7 +104,9 @@ struct TileEditorLayer::State {
   }
 };
 
-void TileEditorLayer::OnAttach() {
+GameplayScene::~GameplayScene() { delete state_; }
+
+void GameplayScene::OnEnter() {
   state_ = new State{};
 
   for (size_t i = 0; i < kTiles.size(); ++i) {
@@ -100,14 +115,14 @@ void TileEditorLayer::OnAttach() {
     if (state_->loaded[i]) {
       ::SetTextureFilter(state_->textures[i], TEXTURE_FILTER_BILINEAR);
     } else {
-      log::Warn("TileEditorLayer: failed to load a floor tile");
+      log::Warn("GameplayScene: failed to load a floor tile");
     }
   }
 
   state_->Checkerboard();
 }
 
-void TileEditorLayer::OnDetach() {
+void GameplayScene::OnExit() {
   if (!state_) return;
   for (size_t i = 0; i < kTiles.size(); ++i) {
     if (state_->loaded[i]) ::UnloadTexture(state_->textures[i]);
@@ -116,8 +131,16 @@ void TileEditorLayer::OnDetach() {
   state_ = nullptr;
 }
 
-void TileEditorLayer::OnUpdate(float /*dt*/) {
+void GameplayScene::OnUpdate(float dt) {
+  if (!state_) return;
+
+  if (::IsKeyPressed(KEY_ESCAPE)) {
+    Manager()->Switch<MainMenuScene>();
+    return;
+  }
+
   state_->RecomputeOriginIfCentered();
+  state_->player.Update(dt, state_->grid);
 
   if (!state_->paint_mode) return;
   const ImGuiIO& io = ImGui::GetIO();
@@ -131,13 +154,14 @@ void TileEditorLayer::OnUpdate(float /*dt*/) {
   if (::IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
     state_->tiles[gy * state_->cols + gx] = state_->brush_id;
   } else if (::IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-    // Right-click swaps to the other tile in the pair (toggle).
     const int other = 1 - state_->brush_id;
     state_->tiles[gy * state_->cols + gx] = other;
   }
 }
 
-void TileEditorLayer::OnRender() {
+void GameplayScene::OnRender() {
+  if (!state_) return;
+
   const int tp = state_->tile_px;
   const int ox = state_->origin_x;
   const int oy = state_->origin_y;
@@ -152,7 +176,7 @@ void TileEditorLayer::OnRender() {
       const ::Rectangle dst{static_cast<float>(ox + c * tp),
                             static_cast<float>(oy + r * tp),
                             static_cast<float>(tp), static_cast<float>(tp)};
-      ::DrawTexturePro(tex, src, dst, {0, 0}, 0.0f, WHITE);
+      ::DrawTexturePro(tex, src, dst, {0, 0}, 0.0f, ck::WHITE);
     }
   }
 
@@ -168,7 +192,7 @@ void TileEditorLayer::OnRender() {
     }
   }
 
-  // Hover highlight + brush preview (Baba-style: show what will be painted).
+  // Hover highlight + brush preview (Baba-style).
   if (state_->paint_mode && !ImGui::GetIO().WantCaptureMouse) {
     const Vector2 m = ::GetMousePosition();
     const int gx = (static_cast<int>(m.x) - ox) / tp;
@@ -188,9 +212,32 @@ void TileEditorLayer::OnRender() {
                            Color{255, 220, 0, 255});
     }
   }
+
+  state_->player.Render(state_->grid);
 }
 
-void TileEditorLayer::OnImGuiRender() {
+void GameplayScene::OnImGuiRender() {
+  if (!state_) return;
+  if (!ImGuiLayer::PanelsVisible()) return;
+
+  if (ImGui::Begin("Player tuning")) {
+    auto& t = state_->player.tuning;
+    ImGui::SliderFloat("Repeat delay", &t.repeat_delay, 0.05f, 0.8f, "%.2f s");
+    ImGui::SliderFloat("Repeat interval", &t.repeat_interval, 0.03f, 0.5f, "%.2f s");
+    ImGui::SliderFloat("Sprite tween", &t.sprite_duration, 0.05f, 0.6f, "%.2f s");
+    ImGui::SliderFloat("Block tween", &t.block_duration, 0.05f, 0.6f, "%.2f s");
+    ImGui::SliderFloat("Hop height (V)", &t.hop_height, 0.0f, 1.5f, "%.2f cells");
+    ImGui::SliderFloat("Hop height (H)", &t.hop_height_horizontal, 0.0f, 1.5f, "%.2f cells");
+    ImGui::SliderFloat("Sprite scale", &t.sprite_scale, 0.1f, 1.0f, "%.2f cells");
+    ImGui::SliderInt("HP font size", &t.hp_font_size, 6, 48, "%d px");
+    ImGui::Separator();
+    ImGui::SliderInt("Max HP", &state_->player.MaxHpRef(), 1, 99);
+    ImGui::SliderInt("HP", &state_->player.HpRef(), 0, state_->player.MaxHpRef());
+    ImGui::Checkbox("ImGui demo", &state_->show_demo);
+  }
+  ImGui::End();
+  if (state_->show_demo) ImGui::ShowDemoWindow(&state_->show_demo);
+
   if (!ImGui::Begin("Tile Editor")) {
     ImGui::End();
     return;
@@ -210,7 +257,6 @@ void TileEditorLayer::OnImGuiRender() {
   }
 
   ImGui::SeparatorText("Brush");
-  // Click an image to select; the selected tile gets a highlighted frame.
   constexpr ImVec2 kBrushSize(48, 48);
   const ImVec4 kSelectedBg(1.0f, 0.85f, 0.2f, 0.85f);
   const ImVec4 kSelectedHover(1.0f, 0.9f, 0.3f, 1.0f);
