@@ -22,8 +22,8 @@ class Player {
     float repeat_interval = 0.12f;  // between subsequent auto-repeats
     float sprite_duration = 0.13f;
     float block_duration = 0.20f;
-    float hop_height = 0.45f;             // multiples of cell size (vertical moves)
-    float hop_height_horizontal = 0.75f;  // multiples of cell size (L/R moves)
+    float hop_height = 0.2f;             // multiples of cell size (vertical moves)
+    float hop_height_horizontal = 0.2f;  // multiples of cell size (L/R moves)
   };
 
   explicit Player(GridCoord start);
