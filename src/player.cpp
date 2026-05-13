@@ -133,7 +133,7 @@ void Player::Render(const Grid& grid, TextOutliner& outliner) const {
   // Sprite, centered on hop-offset position. Smaller than the cell so the
   // block frame around it stays visible — matches refs/player_move_anim/.
   // Negative source width flips the sprite horizontally for left-facing moves.
-  const float sp_size = cs * 0.55f;
+  const float sp_size = cs * tuning.sprite_scale;
   const ::Rectangle sp_dst{sprite_x - sp_size * 0.5f,
                             sprite_y - sp_size * 0.5f, sp_size, sp_size};
   const float sp_w = static_cast<float>(sprite_.GetWidth());
