@@ -12,6 +12,9 @@ class MainMenuScene : public Scene {
   MainMenuScene() : Scene("MainMenu") {}
 
   void OnRender() override;
+
+ private:
+  int focused_index_ = 0;
 };
 
 }  // namespace ck
