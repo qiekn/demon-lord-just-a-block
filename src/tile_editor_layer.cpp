@@ -168,12 +168,22 @@ void TileEditorLayer::OnRender() {
     }
   }
 
-  // Hover highlight when painting.
+  // Hover highlight + brush preview (Baba-style: show what will be painted).
   if (state_->paint_mode && !ImGui::GetIO().WantCaptureMouse) {
     const Vector2 m = ::GetMousePosition();
     const int gx = (static_cast<int>(m.x) - ox) / tp;
     const int gy = (static_cast<int>(m.y) - oy) / tp;
     if (gx >= 0 && gx < state_->cols && gy >= 0 && gy < state_->rows) {
+      const int bid = state_->brush_id;
+      if (bid >= 0 && bid < static_cast<int>(kTiles.size()) && state_->loaded[bid]) {
+        const Texture2D& tex = state_->textures[bid];
+        const ::Rectangle src{0, 0, static_cast<float>(tex.width),
+                              static_cast<float>(tex.height)};
+        const ::Rectangle dst{static_cast<float>(ox + gx * tp),
+                              static_cast<float>(oy + gy * tp),
+                              static_cast<float>(tp), static_cast<float>(tp)};
+        ::DrawTexturePro(tex, src, dst, {0, 0}, 0.0f, Color{255, 255, 255, 160});
+      }
       ::DrawRectangleLines(ox + gx * tp, oy + gy * tp, tp, tp,
                            Color{255, 220, 0, 255});
     }
@@ -181,7 +191,7 @@ void TileEditorLayer::OnRender() {
 }
 
 void TileEditorLayer::OnImGuiRender() {
-  if (!ImGui::Begin("Tile Editor / 贴图编辑")) {
+  if (!ImGui::Begin("Tile Editor")) {
     ImGui::End();
     return;
   }
@@ -199,17 +209,31 @@ void TileEditorLayer::OnImGuiRender() {
     ImGui::DragInt("Origin Y", &state_->origin_y, 1.0f, 0, 4096);
   }
 
-  ImGui::SeparatorText("Brush / 笔刷");
+  ImGui::SeparatorText("Brush");
+  // Click an image to select; the selected tile gets a highlighted frame.
+  constexpr ImVec2 kBrushSize(48, 48);
+  const ImVec4 kSelectedBg(1.0f, 0.85f, 0.2f, 0.85f);
+  const ImVec4 kSelectedHover(1.0f, 0.9f, 0.3f, 1.0f);
   for (int i = 0; i < static_cast<int>(kTiles.size()); ++i) {
     if (i != 0) ImGui::SameLine();
-    ImGui::RadioButton(kTiles[i].label, &state_->brush_id, i);
-  }
-  for (int i = 0; i < static_cast<int>(kTiles.size()); ++i) {
-    if (i != 0) ImGui::SameLine();
-    if (state_->loaded[i]) {
-      ImGui::Image(static_cast<ImTextureID>(state_->textures[i].id), ImVec2(48, 48));
+    if (!state_->loaded[i]) continue;
+    const bool selected = (state_->brush_id == i);
+    ImGui::PushID(i);
+    if (selected) {
+      ImGui::PushStyleColor(ImGuiCol_Button, kSelectedBg);
+      ImGui::PushStyleColor(ImGuiCol_ButtonHovered, kSelectedHover);
+      ImGui::PushStyleColor(ImGuiCol_ButtonActive, kSelectedHover);
     }
+    if (ImGui::ImageButton("##tile",
+                           static_cast<ImTextureID>(state_->textures[i].id),
+                           kBrushSize)) {
+      state_->brush_id = i;
+    }
+    if (selected) ImGui::PopStyleColor(3);
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", kTiles[i].label);
+    ImGui::PopID();
   }
+  ImGui::TextDisabled("Selected: %s", kTiles[state_->brush_id].label);
 
   ImGui::SeparatorText("View");
   ImGui::Checkbox("Paint mode", &state_->paint_mode);
