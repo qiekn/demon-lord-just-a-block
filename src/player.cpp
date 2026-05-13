@@ -32,7 +32,6 @@ float Lerp(float a, float b, float t) { return a + (b - a) * t; }
 Player::Player(GridCoord start)
     : pos_(start),
       prev_(start),
-      repeat_timer_(tuning.repeat_interval),
       sprite_(CK_ASSET("sprites/player.png")),
       block_(CK_ASSET("sprites/cards/card100.png")) {
   sprite_.SetFilter(::TEXTURE_FILTER_BILINEAR);
@@ -67,13 +66,26 @@ void Player::Update(float dt, const Grid& grid) {
   else if (::IsKeyDown(::KEY_UP) || ::IsKeyDown(::KEY_W))
     dy = -1;
 
-  if (dx == 0 && dy == 0) {
-    // Nothing held — prime the timer so the very next press fires instantly.
-    repeat_timer_ = tuning.repeat_interval;
+  const bool held = (dx != 0 || dy != 0);
+  if (!held) {
+    prev_held_ = false;
+    awaiting_first_repeat_ = true;
+    repeat_timer_ = 0.0f;
+  } else if (!prev_held_) {
+    // Rising edge — fire immediately and start counting toward repeat_delay.
+    TryMove(dx, dy, grid);
+    prev_held_ = true;
+    awaiting_first_repeat_ = true;
+    repeat_timer_ = 0.0f;
   } else {
     repeat_timer_ += dt;
-    if (repeat_timer_ >= tuning.repeat_interval) {
-      if (TryMove(dx, dy, grid)) repeat_timer_ = 0.0f;
+    const float threshold =
+        awaiting_first_repeat_ ? tuning.repeat_delay : tuning.repeat_interval;
+    if (repeat_timer_ >= threshold) {
+      if (TryMove(dx, dy, grid)) {
+        repeat_timer_ = 0.0f;
+        awaiting_first_repeat_ = false;
+      }
       // If TryMove failed (tween still in flight or hit a wall), leave the
       // timer at threshold — we retry next frame.
     }

@@ -18,7 +18,8 @@ class Player {
   // through them without ceremony. Defaults tuned against refs/player_move_anim/
   // (30 fps captures, ~6 frames per move ≈ 200 ms total).
   struct Tuning {
-    float repeat_interval = 0.18f;  // seconds between auto-repeats while held
+    float repeat_delay = 0.25f;     // wait before the FIRST auto-repeat after a key starts being held
+    float repeat_interval = 0.12f;  // between subsequent auto-repeats
     float sprite_duration = 0.13f;
     float block_duration = 0.20f;
     float hop_height = 0.45f;             // multiples of cell size (vertical moves)
@@ -57,8 +58,12 @@ class Player {
   // Tween clock: 0 → 1 over `tuning.block_duration` seconds.
   float anim_t_ = 1.0f;
 
-  // Repeat-key clock. Primed to `tuning.repeat_interval` when no direction
-  // key is held, so the first frame a key is detected fires immediately.
+  // Two-stage key repeat. `prev_held_` tracks the rising edge so a fresh press
+  // fires immediately. `awaiting_first_repeat_` selects which threshold the
+  // timer is racing against — `tuning.repeat_delay` until the first
+  // auto-repeat fires, then `tuning.repeat_interval` for every subsequent one.
+  bool prev_held_ = false;
+  bool awaiting_first_repeat_ = true;
   float repeat_timer_ = 0.0f;
 
   ::ck::raii::Texture sprite_;

@@ -43,7 +43,8 @@ void GameLayer::OnImGuiRender() {
   if (!state_) return;
   if (ImGui::Begin("Player tuning")) {
     auto& t = state_->player.tuning;
-    ImGui::SliderFloat("Key repeat", &t.repeat_interval, 0.05f, 0.8f, "%.2f s");
+    ImGui::SliderFloat("Repeat delay", &t.repeat_delay, 0.05f, 0.8f, "%.2f s");
+    ImGui::SliderFloat("Repeat interval", &t.repeat_interval, 0.03f, 0.5f, "%.2f s");
     ImGui::SliderFloat("Sprite tween", &t.sprite_duration, 0.05f, 0.6f, "%.2f s");
     ImGui::SliderFloat("Block tween", &t.block_duration, 0.05f, 0.6f, "%.2f s");
     ImGui::SliderFloat("Hop height (V)", &t.hop_height, 0.0f, 1.5f, "%.2f cells");
