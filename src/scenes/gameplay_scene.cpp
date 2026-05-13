@@ -78,7 +78,7 @@ struct GameplayScene::State {
   std::vector<int> tiles;
   int brush_id = 0;
   bool show_grid = false;
-  bool paint_mode = true;
+  bool paint_mode = false;
 
   State() : grid(11, 7, 96.0f), player({grid.Cols() / 2, grid.Rows() / 2}) {}
 
