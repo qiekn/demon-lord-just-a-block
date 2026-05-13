@@ -16,17 +16,18 @@ implementation details when extending the wrapper itself. This file is the
 
 ## How to bring raylib in
 
-Three entry points, **one per TU** (do not mix):
+`import raylib;` is the **only** allowed entry point in this project. `#include <raylib.h>` is forbidden — it leaks macros (color constants `RED`/`WHITE`/..., shadows `ck::` constants) and sidesteps the whole reason the wrapper exists. The header-form aggregate `#include "raylib.hpp"` exists upstream but isn't used here either.
 
-| Path | When | Notes |
-|---|---|---|
-| `import raylib;` | Default in `src/main.cpp` and any TU that also uses `import std;` | Curated subset — see "Adding to the module" below if a symbol is missing |
-| `#include "raylib.hpp"` | Same surface as the module, header form | Pulls all of `include/raylib-hpp/*.hpp` |
-| `#include <raylib.h>` | Only in TUs that do NOT `import std;` AND only when you need raw C symbols | Leaks macros (`RED`, `KEY_*`); shadows `ck::` constants |
+| Path | Project policy |
+|---|---|
+| `import raylib;` | **Use this.** Curated subset; see "Adding to the module" below if a symbol is missing. |
+| `#include "raylib.hpp"` | Not used in this repo. Same surface as the module, header form — only relevant when porting code outside this project. |
+| `#include <raylib.h>` | **Forbidden.** If you find existing files doing this, migrate them when next touched. |
 
-`src/application.cpp`, `src/game_layer.cpp`, `src/imgui_layer.cpp` use the
-third form because they don't `import std;` and they pre-date the module.
-**New code should use `import raylib;`** unless there's a reason not to.
+If `import raylib;` doesn't expose what you need, the two escape hatches in order of preference:
+
+1. `rl::Symbol(...)` — every raylib `RLAPI` is mirrored in the `rl::` namespace. Cheapest fix when the call site is the only consumer (e.g. `rl::GetScreenWidth()`).
+2. Add a `using ck::Symbol;` (or `using ::DrawXxx;`) export to `deps/Raylib-Hpp/src/raylib.cppm` upstream. Preferred when the symbol is broadly useful and should join the curated surface.
 
 ## Namespaces — what lives where
 
@@ -37,8 +38,30 @@ third form because they don't `import std;` and they pre-date the module.
 | `ck::` | Scope guards, free functions, color constants, enum aliases | `ck::Drawing`, `ck::RED`, `ck::IsKeyDown`, `ck::DrawText`, `ck::KEY_W` (via `using enum`) |
 | `rl::` | Every raylib `RLAPI` C function, unmodified | `rl::DrawRectangle`, `rl::LoadTexture` — escape hatch when `ck::` doesn't expose what you need |
 
-`using namespace ck;` + `using namespace ck::raii;` at the top of a TU is the
-common pattern (see `src/main.cpp`).
+### Inside `namespace ck` — drop the prefix
+
+The project lives in `namespace ck`. Inside a TU that's wrapped in `namespace ck { ... }`, **don't repeat the `ck::` prefix** — write the nested namespace directly:
+
+```cpp
+namespace ck {
+
+void MainMenuScene::OnRender() {
+  // YES — inside namespace ck:
+  const int saved = gui::GetStyle(DEFAULT, TEXT_SIZE);
+  log::Info("hello");
+  const Vector2 m = GetMousePosition();           // ck::GetMousePosition via using
+
+  // NO — redundant prefix:
+  // const int saved = ck::gui::GetStyle(...);
+  // ck::log::Info("hello");
+}
+
+}  // namespace ck
+```
+
+The `ck::` qualification is appropriate only in TUs that aren't themselves inside `namespace ck` (e.g. `main.cpp`, or external code). Inside, the prefix is noise.
+
+For files that aren't wrapped in `namespace ck` and don't want to repeat `ck::` everywhere, `using namespace ck;` + `using namespace ck::raii;` at the top is the alternative (see `src/main.cpp`).
 
 ## RAII handles — the rules
 
@@ -93,22 +116,15 @@ The wrapper:
 1. `raylib_c.hpp` includes `raylib.h` and `#undef`s every color macro.
 2. `colors.hpp` re-declares them as `inline constexpr ::Color` in `ck::`.
 
-**Consequence:** use `ck::RED`, not `RED`. After `using namespace ck;` both
-read as `RED`, but if you ever `#include <raylib.h>` in the same TU you'll
-re-introduce the macros and break the module build. Pick one path per TU.
+**Consequence:** use `ck::RED`, not `RED`. After `using namespace ck;` both read as `RED`. Since `#include <raylib.h>` is forbidden in this project, the macros never re-leak — but be aware of the trap if you ever copy code from outside.
 
 The same fix is applied to `KEY_*` and `MOUSE_BUTTON_*` (via `using enum ::KeyboardKey` / `using enum ::MouseButton` in the module).
 
 ## Text — use `ck::DrawText`, not `::DrawText`
 
-`ck::DrawText` / `ck::MeasureText` (defined in `font_default.hpp`) route
-through a registered default font when one is set via `ck::SetDefaultFont`.
-`main.cpp` registers NotoSansSC at startup, so anything calling `ck::DrawText`
-gets Chinese glyphs for free. Calling `::DrawText` bypasses this and renders
-the raylib builtin (ASCII only).
+`ck::DrawText` / `ck::MeasureText` (defined in `font_default.hpp`) route through a registered default font when one is set via `ck::SetDefaultFont`. `main.cpp` registers NotoSansSC at startup, so anything calling `ck::DrawText` gets Chinese glyphs for free. Calling `::DrawText` bypasses this and renders the raylib builtin (ASCII only).
 
-`game_layer.cpp` currently calls bare `DrawText` because it `#include`s
-`<raylib.h>` — that should migrate to `ck::DrawText` when it next gets touched.
+If you find any file still using bare `::DrawText` (legacy `#include <raylib.h>` survivors), migrate to `ck::DrawText` (or just `DrawText` from inside `namespace ck`) when next touched.
 
 ## Adding a symbol that's missing from `import raylib;`
 
@@ -178,30 +194,31 @@ SetDefaultFont(noto);
 ```
 
 ```cpp
-// Inside a Layer::OnRender — Application has already opened BeginDrawing
-// via Application::Run, so DO NOT add another ck::Drawing here.
-::DrawRectangle(x, y, w, h, ck::RED);
-ck::DrawText("hello", 10, 10, 24, ck::BLACK);   // default-font aware
+// Inside a Scene::OnRender (which lives in namespace ck) — Application has
+// already opened BeginDrawing via Application::Run, so DO NOT add another
+// Drawing here.
+namespace ck {
+void GameplayScene::OnRender() {
+  rl::DrawRectangle(x, y, w, h, RED);   // rl:: for symbols not in ck::; RED via ck::
+  DrawText("hello", 10, 10, 24, BLACK); // ck::DrawText resolves to default-font aware
+}
+}
 ```
 
 ```cpp
 // Camera2D
-::Camera2D cam{.offset = {w/2.f, h/2.f}, .target = player_pos, .zoom = 1.0f};
+Camera2D cam{.offset = {w/2.f, h/2.f}, .target = player_pos, .zoom = 1.0f};
 {
-  ck::Mode2D mode{cam};
+  Mode2D mode{cam};  // ck::Mode2D, prefix dropped because we're in namespace ck
   // world-space draws here
 }
 ```
 
 ## Don't
 
-- Don't `#include <raylib.h>` in a TU that also uses `import raylib;` — the
-  macros leak and shadow `ck::` constants.
-- Don't wrap `::DrawRectangle` / `::DrawCircle` / etc. just to add a `ck::`
-  prefix. They're already re-exported under `ck::` via the module; in
-  header-include builds they live at `::`. Wrap only when adding value.
+- **Don't `#include <raylib.h>`.** Forbidden project-wide. Use `import raylib;` plus `rl::` for un-exported symbols.
+- **Don't write `ck::xxx` inside `namespace ck { }`.** Drop the prefix — `gui::SetStyle`, `log::Info`, `raii::Texture`. See "Inside `namespace ck`" above.
+- Don't wrap `::DrawRectangle` / `::DrawCircle` / etc. just to add a `ck::` prefix. They're already re-exported under `ck::` via the module. Wrap only when adding value.
 - Don't move a `ck::raii::Window`. It's deleted, and the deletion is load-bearing.
-- Don't call `Reset(handle.Get())` expecting it to be a no-op via reference
-  equality — `Resource::Reset` byte-compares the POD handle to guard against this.
-- Don't store a raw `::Texture2D` (or other handle) and let it outlive its
-  `ck::raii::` owner. Always pass `tex.Get()` at the use site.
+- Don't call `Reset(handle.Get())` expecting it to be a no-op via reference equality — `Resource::Reset` byte-compares the POD handle to guard against this.
+- Don't store a raw `::Texture2D` (or other handle) and let it outlive its `ck::raii::` owner. Always pass `tex.Get()` at the use site.

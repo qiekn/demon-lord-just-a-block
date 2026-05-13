@@ -57,7 +57,12 @@ No tests yet. Formatting is enforced by Google-based `.clang-format` (2-space in
 - `import raylib;` — yes, Raylib-Hpp ships a C++23 module that exports the curated API (`ck::raii::Window`, `ck::Drawing`, `ck::SetDefaultFont`, color constants, etc.). See `deps/Raylib-Hpp/CLAUDE.md` for the namespace breakdown.
 - Everything else (imgui, entt, spdlog, project-internal headers) — plain `#include`. Don't try to wrap them in modules.
 
-If a raylib symbol is missing from `import raylib;`, it almost certainly needs to be added to `deps/Raylib-Hpp/src/raylib.cppm` upstream — the module re-exports a curated subset by design.
+**Never `#include <raylib.h>` directly.** Always go through `import raylib;`. The header form leaks macros (color constants `RED`/`WHITE`/...) and shadows the curated `ck::` constants — and it sidesteps the whole point of having a wrapper. If a symbol is missing from `import raylib;`, two options, in order of preference:
+
+1. Use `rl::Symbol(...)` — every raylib `RLAPI` is mirrored in the `rl::` namespace as an escape hatch. Example: `rl::GetScreenWidth()` when the curated module surface doesn't include it.
+2. Add a `using ck::Symbol;` (or `using ::DrawXxx;`) export to `deps/Raylib-Hpp/src/raylib.cppm` upstream — preferred when the symbol is broadly useful and deserves to be part of the curated surface.
+
+The same rule applies to raygui: prefer `import raygui;` or `#include "raygui-hpp/raygui.hpp"`, never `#include "raygui.h"` directly.
 
 ### `import std;` ✗ `#include <std-header>` — the load-bearing rule
 
@@ -70,6 +75,26 @@ Clang 21 + libc++ rejects mixing `import std;` with traditional `#include <forma
 - **Local non-`import-std` TUs.** Files like `src/imgui_layer.cpp` and `src/application.cpp` use plain `#include <vector>` etc. and never `import std;`. They can pull in any headers they like; main.cpp just stays away from those headers itself.
 
 If you find yourself adding `#include <format>`, `#include <ranges>`, etc. to a header that main.cpp transitively pulls in, stop — go pick one of the patterns above instead.
+
+## Namespace conventions
+
+All project code lives in `namespace ck`. When writing code **inside** that namespace, drop the redundant `ck::` prefix — write the nested namespace directly:
+
+```cpp
+namespace ck {
+
+void Foo() {
+  gui::SetStyle(DEFAULT, TEXT_SIZE, ui::kFontTitle);  // not ck::gui::, ck::ui::
+  log::Info("hello");                                  // not ck::log::Info
+  raii::Texture tex{path};                             // not ck::raii::Texture
+}
+
+}  // namespace ck
+```
+
+Keep the full `ck::xxx` qualification only in TUs that are outside `namespace ck` (e.g. `main.cpp`, or external test entry points). Inside `namespace ck`, the prefix is noise.
+
+This applies to nested namespaces in the project (`ck::log`, `ck::ui`, `ck::raii`) **and** to ones from wrappers (`ck::gui` from raygui-hpp, `ck::raii`/scope guards from raylib-hpp).
 
 ## Logging
 
