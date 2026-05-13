@@ -13,6 +13,11 @@ namespace ck {
 
 namespace {
 
+// Set to false by the backtick toggle in OnImGuiBegin. Skips panel rendering
+// across the whole frame; the ImGui frame itself still NewFrame/Render so
+// the cursor layer's foreground draws remain live.
+bool g_panels_visible = true;
+
 // Hazel-style dark theme, ported from ck-engine's ImGuiLayer.
 void ApplyDarkTheme() {
   auto& colors = ImGui::GetStyle().Colors;
@@ -82,6 +87,13 @@ void ImGuiLayer::OnImGuiBegin() {
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 
+  // Toggle on backtick. Read after NewFrame so ImGui's input state for this
+  // frame is settled; raylib's key state is independent so the order doesn't
+  // matter for the IsKeyPressed call itself.
+  if (::IsKeyPressed(KEY_GRAVE)) g_panels_visible = !g_panels_visible;
+
+  if (!g_panels_visible) return;
+
   // Dockable surface over the main viewport. PassthruCentralNode keeps the
   // center transparent so the game stays visible behind any docked panels.
   ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(),
@@ -89,6 +101,8 @@ void ImGuiLayer::OnImGuiBegin() {
 }
 
 void ImGuiLayer::OnImGuiRender() {
+  if (!g_panels_visible) return;
+
   if (ImGui::Begin("ImGui")) {
     ImGuiIO& io = ImGui::GetIO();
     bool viewports = (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0;
@@ -97,6 +111,7 @@ void ImGuiLayer::OnImGuiRender() {
       else io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
     }
     ImGui::TextDisabled("When on, ImGui windows dragged outside the main\nwindow become their own OS windows.");
+    ImGui::TextDisabled("Press ` to toggle all ImGui panels.");
   }
   ImGui::End();
 }
@@ -118,5 +133,7 @@ void ImGuiLayer::OnImGuiEnd() {
     glfwMakeContextCurrent(backup);
   }
 }
+
+bool ImGuiLayer::PanelsVisible() { return g_panels_visible; }
 
 }  // namespace ck

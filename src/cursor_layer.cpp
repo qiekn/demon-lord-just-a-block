@@ -4,6 +4,7 @@
 #include <raylib.h>
 
 #include "assets.hpp"
+#include "imgui_layer.hpp"
 #include "log.hpp"
 
 namespace ck {
@@ -39,12 +40,17 @@ void CursorLayer::OnDetach() {
 void CursorLayer::OnImGuiRender() {
   if (!state_) return;
 
-  if (ImGui::Begin("Cursor")) {
-    ImGui::Checkbox("Use custom cursor", &state_->enabled);
-    ImGui::SliderFloat("Size", &state_->scale, 0.25f, 3.0f, "%.2fx");
-    ImGui::TextDisabled("Hides the OS cursor everywhere (including over\nImGui panels) and draws the sprite instead.");
+  // The settings window is a normal panel — hide alongside the rest when
+  // backtick toggle is off. The actual cursor draw (below) is unconditional
+  // so the custom sprite keeps moving when imgui panels are hidden.
+  if (ImGuiLayer::PanelsVisible()) {
+    if (ImGui::Begin("Cursor")) {
+      ImGui::Checkbox("Use custom cursor", &state_->enabled);
+      ImGui::SliderFloat("Size", &state_->scale, 0.25f, 3.0f, "%.2fx");
+      ImGui::TextDisabled("Hides the OS cursor everywhere (including over\nImGui panels) and draws the sprite instead.");
+    }
+    ImGui::End();
   }
-  ImGui::End();
 
   // When the custom cursor is on we need to stop imgui's glfw backend from
   // resetting GLFW_CURSOR back to NORMAL each frame (it does that whenever its

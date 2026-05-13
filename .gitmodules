@@ -1,5 +1,5 @@
 [submodule "deps/Raylib-Hpp"]
-	path = deps/Raylib-Hpp
+	path = deps/raylib-hpp
 	url = https://github.com/qiekn/Raylib-Hpp.git
 [submodule "deps/imgui"]
 	path = deps/imgui
