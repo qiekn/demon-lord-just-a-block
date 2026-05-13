@@ -15,6 +15,7 @@ class ImGuiLayer : public Layer {
   void OnAttach() override;
   void OnDetach() override;
   void OnImGuiBegin() override;
+  void OnImGuiRender() override;
   void OnImGuiEnd() override;
 };
 

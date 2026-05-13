@@ -88,6 +88,19 @@ void ImGuiLayer::OnImGuiBegin() {
                                ImGuiDockNodeFlags_PassthruCentralNode);
 }
 
+void ImGuiLayer::OnImGuiRender() {
+  if (ImGui::Begin("ImGui")) {
+    ImGuiIO& io = ImGui::GetIO();
+    bool viewports = (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0;
+    if (ImGui::Checkbox("Multi-viewport (drag windows outside)", &viewports)) {
+      if (viewports) io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+      else io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
+    }
+    ImGui::TextDisabled("When on, ImGui windows dragged outside the main\nwindow become their own OS windows.");
+  }
+  ImGui::End();
+}
+
 void ImGuiLayer::OnImGuiEnd() {
   ImGui::Render();
   // Flush raylib's pending sprite batch before ImGui draws — otherwise the
@@ -95,6 +108,15 @@ void ImGuiLayer::OnImGuiEnd() {
   // on top of the panels.
   ::rlDrawRenderBatchActive();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+  // Render any platform windows that escaped the main viewport.
+  ImGuiIO& io = ImGui::GetIO();
+  if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+    GLFWwindow* backup = glfwGetCurrentContext();
+    ImGui::UpdatePlatformWindows();
+    ImGui::RenderPlatformWindowsDefault();
+    glfwMakeContextCurrent(backup);
+  }
 }
 
 }  // namespace ck
