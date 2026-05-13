@@ -11,6 +11,9 @@ namespace ck {
 struct CursorLayer::State {
   Texture2D tex{};
   bool loaded = false;
+  bool enabled = true;
+  // Track OS cursor visibility so we don't spam GLFW each frame.
+  bool os_cursor_visible = true;
 };
 
 void CursorLayer::OnAttach() {
@@ -19,29 +22,50 @@ void CursorLayer::OnAttach() {
   state_->loaded = state_->tex.id != 0;
   if (state_->loaded) {
     ::SetTextureFilter(state_->tex, TEXTURE_FILTER_BILINEAR);
-    ::HideCursor();
   } else {
     log::Warn("CursorLayer: failed to load assets/sprites/cursor.png");
   }
 }
 
 void CursorLayer::OnDetach() {
-  if (state_ && state_->loaded) {
-    ::ShowCursor();
-    ::UnloadTexture(state_->tex);
-  }
+  if (!state_) return;
+  if (!state_->os_cursor_visible) ::ShowCursor();
+  if (state_->loaded) ::UnloadTexture(state_->tex);
   delete state_;
   state_ = nullptr;
 }
 
 void CursorLayer::OnImGuiRender() {
-  if (!state_ || !state_->loaded) return;
-  const Vector2 m = ::GetMousePosition();
-  const float w = static_cast<float>(state_->tex.width);
-  const float h = static_cast<float>(state_->tex.height);
-  ImGui::GetForegroundDrawList()->AddImage(
-      static_cast<ImTextureID>(state_->tex.id),
-      ImVec2(m.x, m.y), ImVec2(m.x + w, m.y + h));
+  if (!state_) return;
+
+  if (ImGui::Begin("Cursor / 光标")) {
+    ImGui::Checkbox("Use custom cursor", &state_->enabled);
+    ImGui::TextDisabled("Sprite shows over the game viewport;\nthe OS cursor returns over ImGui windows.");
+  }
+  ImGui::End();
+
+  const ImGuiIO& io = ImGui::GetIO();
+  const bool over_imgui = io.WantCaptureMouse;
+  const bool show_sprite = state_->enabled && state_->loaded && !over_imgui;
+  const bool want_os_cursor = !show_sprite;
+
+  if (want_os_cursor != state_->os_cursor_visible) {
+    if (want_os_cursor) ::ShowCursor();
+    else ::HideCursor();
+    state_->os_cursor_visible = want_os_cursor;
+  }
+
+  if (show_sprite) {
+    // ImGui foreground drawlist uses DisplaySize (framebuffer-pixel) space.
+    // raylib's GetMousePosition is scaled to logical coords by Application,
+    // so use ImGui's mouse pos here to stay in the same coord system.
+    const ImVec2 m = io.MousePos;
+    const float w = static_cast<float>(state_->tex.width);
+    const float h = static_cast<float>(state_->tex.height);
+    ImGui::GetForegroundDrawList()->AddImage(
+        static_cast<ImTextureID>(state_->tex.id),
+        ImVec2(m.x, m.y), ImVec2(m.x + w, m.y + h));
+  }
 }
 
 }  // namespace ck
