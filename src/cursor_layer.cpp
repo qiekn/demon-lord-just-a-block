@@ -44,6 +44,17 @@ void CursorLayer::OnImGuiRender() {
   }
   ImGui::End();
 
+  // When the custom cursor is on we need to stop imgui's glfw backend from
+  // resetting GLFW_CURSOR back to NORMAL each frame (it does that whenever its
+  // current cursor shape isn't ImGuiMouseCursor_None) — otherwise HideCursor()
+  // gets undone every frame and the OS arrow keeps showing.
+  ImGuiIO& io = ImGui::GetIO();
+  if (state_->enabled) {
+    io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+  } else {
+    io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
+  }
+
   const bool show_sprite = state_->enabled && state_->loaded;
   const bool want_os_cursor = !show_sprite;
 
@@ -57,7 +68,7 @@ void CursorLayer::OnImGuiRender() {
     // ImGui foreground drawlist uses DisplaySize (framebuffer-pixel) space.
     // raylib's GetMousePosition is scaled to logical coords by Application,
     // so use ImGui's mouse pos here to stay in the same coord system.
-    const ImVec2 m = ImGui::GetIO().MousePos;
+    const ImVec2 m = io.MousePos;
     const float w = static_cast<float>(state_->tex.width);
     const float h = static_cast<float>(state_->tex.height);
     ImGui::GetForegroundDrawList()->AddImage(
