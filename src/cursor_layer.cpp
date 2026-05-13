@@ -12,6 +12,7 @@ struct CursorLayer::State {
   Texture2D tex{};
   bool loaded = false;
   bool enabled = true;
+  float scale = 1.0f;
   // Track OS cursor visibility so we don't spam GLFW each frame.
   bool os_cursor_visible = true;
 };
@@ -40,6 +41,7 @@ void CursorLayer::OnImGuiRender() {
 
   if (ImGui::Begin("Cursor")) {
     ImGui::Checkbox("Use custom cursor", &state_->enabled);
+    ImGui::SliderFloat("Size", &state_->scale, 0.25f, 3.0f, "%.2fx");
     ImGui::TextDisabled("Hides the OS cursor everywhere (including over\nImGui panels) and draws the sprite instead.");
   }
   ImGui::End();
@@ -69,8 +71,8 @@ void CursorLayer::OnImGuiRender() {
     // raylib's GetMousePosition is scaled to logical coords by Application,
     // so use ImGui's mouse pos here to stay in the same coord system.
     const ImVec2 m = io.MousePos;
-    const float w = static_cast<float>(state_->tex.width);
-    const float h = static_cast<float>(state_->tex.height);
+    const float w = static_cast<float>(state_->tex.width) * state_->scale;
+    const float h = static_cast<float>(state_->tex.height) * state_->scale;
     ImGui::GetForegroundDrawList()->AddImage(
         static_cast<ImTextureID>(state_->tex.id),
         ImVec2(m.x, m.y), ImVec2(m.x + w, m.y + h));
