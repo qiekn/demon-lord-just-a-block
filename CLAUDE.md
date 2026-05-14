@@ -17,7 +17,7 @@ When matching the look and feel of the original game:
 
 - **`./original/`** — local install of the shipped Unity build (`DemonLordJustABlock.exe`). Run it side-by-side for A/B comparison. Gitignored.
 - **`./refs/player_move_anim/`** — 30 fps frame captures of the original player walk cycle: `down-{1..6}.png`, `left-{1..6}.png`, `right-{1..6}.png`, `up-{1..7}.png`. Source of truth for animation timing and sprite layout. Gitignored.
-  - Don't confuse this with `deps/Raylib-Hpp/refs/raylib`, which is the wrapper's own raylib clone.
+  - Don't confuse this with `deps/raylib-hpp/refs/raylib`, which is the wrapper's own raylib clone.
 
 **Measurements:** at 4K fullscreen, one grid cell is **215 px** (measured against the original). Use this when sizing sprites, the camera, or layout against the original.
 
@@ -32,7 +32,7 @@ First-time setup pulls all submodules and clones raylib into Raylib-Hpp's `refs/
 
 ```sh
 git submodule update --init --recursive
-git clone --depth 1 https://github.com/raysan5/raylib.git deps/Raylib-Hpp/refs/raylib
+git clone --depth 1 https://github.com/raysan5/raylib.git deps/raylib-hpp/refs/raylib
 cmake -S . -B build -G Ninja
 cmake --build build
 ./build/block.exe
@@ -54,13 +54,13 @@ No tests yet. Formatting is enforced by Google-based `.clang-format` (2-space in
 ## Module Policy
 
 - `import std;` — yes, everywhere we can.
-- `import raylib;` — yes, Raylib-Hpp ships a C++23 module that exports the curated API (`ck::raii::Window`, `ck::Drawing`, `ck::SetDefaultFont`, color constants, etc.). See `deps/Raylib-Hpp/CLAUDE.md` for the namespace breakdown.
+- `import raylib;` — yes, Raylib-Hpp ships a C++23 module that exports the curated API (`ck::raii::Window`, `ck::Drawing`, `ck::SetDefaultFont`, color constants, etc.). See `deps/raylib-hpp/CLAUDE.md` for the namespace breakdown.
 - Everything else (imgui, entt, spdlog, project-internal headers) — plain `#include`. Don't try to wrap them in modules.
 
 **Never `#include <raylib.h>` directly.** Always go through `import raylib;`. The header form leaks macros (color constants `RED`/`WHITE`/...) and shadows the curated `ck::` constants — and it sidesteps the whole point of having a wrapper. If a symbol is missing from `import raylib;`, two options, in order of preference:
 
 1. Use `rl::Symbol(...)` — every raylib `RLAPI` is mirrored in the `rl::` namespace as an escape hatch. Example: `rl::GetScreenWidth()` when the curated module surface doesn't include it.
-2. Add a `using ck::Symbol;` (or `using ::DrawXxx;`) export to `deps/Raylib-Hpp/src/raylib.cppm` upstream — preferred when the symbol is broadly useful and deserves to be part of the curated surface.
+2. Add a `using ck::Symbol;` (or `using ::DrawXxx;`) export to `deps/raylib-hpp/src/raylib.cppm` upstream — preferred when the symbol is broadly useful and deserves to be part of the curated surface.
 
 The same rule applies to raygui: prefer `import raygui;` or `#include "raygui-hpp/raygui.hpp"`, never `#include "raygui.h"` directly.
 
@@ -134,7 +134,7 @@ Naming chosen deliberately: **World** instead of Scene, **Actor** instead of Ent
 ## Dependencies (`deps/`)
 
 Submodules:
-- `deps/Raylib-Hpp` — qiekn/Raylib-Hpp; provides `import raylib;` (target `raylib_hpp_modules`) and bundles raylib at `refs/raylib` (gitignored by the wrapper; must be cloned locally).
+- `deps/raylib-hpp` — qiekn/Raylib-Hpp; provides `import raylib;` (target `raylib_hpp_modules`) and bundles raylib at `refs/raylib` (gitignored by the wrapper; must be cloned locally).
 - `deps/imgui` — ocornut/imgui on the **docking** branch. Built as a local static `imgui` target with the glfw + opengl3 backends.
 - `deps/entt` — header-only; exposed as INTERFACE target `entt`. Linked but not yet used.
 - `deps/spdlog` — header-only; exposed as INTERFACE target `spdlog_headers`. Linked via `log.cpp` only.

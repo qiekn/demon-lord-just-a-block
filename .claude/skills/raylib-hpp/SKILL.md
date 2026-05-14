@@ -1,16 +1,16 @@
 ---
 name: raylib-hpp
-description: How to use the Raylib-Hpp C++23 wrapper that this project bundles at deps/Raylib-Hpp. Covers import paths, namespaces (ck::, ck::raii::, rl::), RAII patterns, the colors-and-macros trick, and how to add symbols to the import raylib; module.
+description: How to use the Raylib-Hpp C++23 wrapper that this project bundles at deps/raylib-hpp. Covers import paths, namespaces (ck::, ck::raii::, rl::), RAII patterns, the colors-and-macros trick, and how to add symbols to the import raylib; module.
 ---
 
 # Raylib-Hpp Usage Guide
 
 This project does **not** call raylib's C API directly in most files. It uses
-the bundled wrapper at `deps/Raylib-Hpp/` (a header-only library + a C++23
+the bundled wrapper at `deps/raylib-hpp/` (a header-only library + a C++23
 named module). When writing or reviewing code that touches raylib, use this
 guide.
 
-The wrapper's own docs live at `deps/Raylib-Hpp/CLAUDE.md` — read that for
+The wrapper's own docs live at `deps/raylib-hpp/CLAUDE.md` — read that for
 implementation details when extending the wrapper itself. This file is the
 **consumer** guide.
 
@@ -27,7 +27,7 @@ implementation details when extending the wrapper itself. This file is the
 If `import raylib;` doesn't expose what you need, the two escape hatches in order of preference:
 
 1. `rl::Symbol(...)` — every raylib `RLAPI` is mirrored in the `rl::` namespace. Cheapest fix when the call site is the only consumer (e.g. `rl::GetScreenWidth()`).
-2. Add a `using ck::Symbol;` (or `using ::DrawXxx;`) export to `deps/Raylib-Hpp/src/raylib.cppm` upstream. Preferred when the symbol is broadly useful and should join the curated surface.
+2. Add a `using ck::Symbol;` (or `using ::DrawXxx;`) export to `deps/raylib-hpp/src/raylib.cppm` upstream. Preferred when the symbol is broadly useful and should join the curated surface.
 
 ## Namespaces — what lives where
 
@@ -131,7 +131,7 @@ If you find any file still using bare `::DrawText` (legacy `#include <raylib.h>`
 The module re-exports a **curated subset**. If `import raylib;` doesn't see
 the symbol you need:
 
-1. Check `deps/Raylib-Hpp/src/raylib.cppm` — is there a `using` declaration
+1. Check `deps/raylib-hpp/src/raylib.cppm` — is there a `using` declaration
    for it? If not, this is the gap.
 2. The symbol is probably defined as a free function in one of the
    `include/raylib-hpp/*.hpp` topic files (e.g. `shapes.hpp` for `DrawCircle`).
@@ -150,7 +150,7 @@ If the symbol doesn't have a `ck::` wrapper at all, you have two choices:
 
 Mirror `texture.hpp`:
 
-1. New header in `deps/Raylib-Hpp/include/raylib-hpp/foo.hpp`. Include
+1. New header in `deps/raylib-hpp/include/raylib-hpp/foo.hpp`. Include
    `raylib_c.hpp` (never `raylib.h` directly) and `resource.hpp`.
 2. `class Foo : public Resource<Foo, ::FooHandle>` in `namespace ck::raii`.
 3. Implement `Valid()` (calls raylib's `IsFooValid` or equivalent) and

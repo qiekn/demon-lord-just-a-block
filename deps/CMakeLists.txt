@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------: Raylib-Hpp (bundles raylib via refs/raylib)
-add_subdirectory(Raylib-Hpp)
+add_subdirectory(raylib-hpp)
 
 # ---------------------------------------------------------------------------: Raygui-Hpp (raygui v5 wrapped as ck::gui / `import raygui;`)
 add_subdirectory(Raygui-Hpp)
@@ -24,7 +24,7 @@ target_include_directories(spdlog_headers INTERFACE
 # glfw + opengl3 backends. glfw headers come from raylib's bundled copy.
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
 set(RAYLIB_GLFW_INCLUDE
-    ${CMAKE_SOURCE_DIR}/deps/Raylib-Hpp/refs/raylib/src/external/glfw/include)
+    ${CMAKE_SOURCE_DIR}/deps/raylib-hpp/refs/raylib/src/external/glfw/include)
 
 add_library(imgui STATIC
   ${IMGUI_DIR}/imgui.cpp

@@ -31,8 +31,8 @@ target_link_libraries(block PRIVATE
 # instead. Both paths coexist in distinct TUs.
 target_include_directories(block PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/deps/Raylib-Hpp/refs/raylib/src
-  ${CMAKE_SOURCE_DIR}/deps/Raylib-Hpp/refs/raylib/src/external/glfw/include
+  ${CMAKE_SOURCE_DIR}/deps/raylib-hpp/refs/raylib/src
+  ${CMAKE_SOURCE_DIR}/deps/raylib-hpp/refs/raylib/src/external/glfw/include
 )
 
 target_compile_features(block PUBLIC cxx_std_23)

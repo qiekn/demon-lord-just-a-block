@@ -20,7 +20,7 @@ endif()
 
 # ---------------------------------------------------------------------------: submodule sanity
 foreach(_dep IN ITEMS
-    "deps/Raylib-Hpp/CMakeLists.txt"
+    "deps/raylib-hpp/CMakeLists.txt"
     "deps/imgui/imgui.h"
     "deps/entt/src/entt/entt.hpp")
   if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_dep}")
@@ -30,13 +30,13 @@ foreach(_dep IN ITEMS
   endif()
 endforeach()
 
-# Raylib-Hpp expects raylib vendored at deps/Raylib-Hpp/refs/raylib (gitignored
+# Raylib-Hpp expects raylib vendored at deps/raylib-hpp/refs/raylib (gitignored
 # by the wrapper repo). Clone it locally; CI scripts should do the same.
-if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/deps/Raylib-Hpp/refs/raylib/CMakeLists.txt")
+if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/deps/raylib-hpp/refs/raylib/CMakeLists.txt")
   message(FATAL_ERROR
-    "raylib is missing under deps/Raylib-Hpp/refs/raylib (gitignored by Raylib-Hpp). "
+    "raylib is missing under deps/raylib-hpp/refs/raylib (gitignored by Raylib-Hpp). "
     "Clone it: git clone --depth 1 https://github.com/raysan5/raylib.git "
-    "deps/Raylib-Hpp/refs/raylib")
+    "deps/raylib-hpp/refs/raylib")
 endif()
 
 add_subdirectory(deps)
