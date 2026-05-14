@@ -1,13 +1,13 @@
 ---
 name: raygui-hpp
-description: How to use the Raygui-Hpp C++23 wrapper that this project bundles at deps/Raygui-Hpp. Covers import paths, the ck::gui:: namespace surface, control return values, what raygui internals are NOT reachable through the module, the bitmap-font HiDPI workaround, and which raygui macros/enums leak through which path.
+description: How to use the Raygui-Hpp C++23 wrapper that this project bundles at deps/raygui-hpp. Covers import paths, the ck::gui:: namespace surface, control return values, what raygui internals are NOT reachable through the module, the bitmap-font HiDPI workaround, and which raygui macros/enums leak through which path.
 ---
 
 # Raygui-Hpp Usage Guide
 
-This project does not call raygui's C API directly when a wrapper exists. It uses the bundled wrapper at `deps/Raygui-Hpp/` — a thin set of inline headers in `include/raygui-hpp/*.hpp` plus the C++23 module `import raygui;`. The actual `raygui.h` implementation is compiled once into a static lib (`raygui_impl`) so your TU does **not** define `RAYGUI_IMPLEMENTATION`.
+This project does not call raygui's C API directly when a wrapper exists. It uses the bundled wrapper at `deps/raygui-hpp/` — a thin set of inline headers in `include/raygui-hpp/*.hpp` plus the C++23 module `import raygui;`. The actual `raygui.h` implementation is compiled once into a static lib (`raygui_impl`) so your TU does **not** define `RAYGUI_IMPLEMENTATION`.
 
-The wrapper's own architecture lives at `deps/Raygui-Hpp/CLAUDE.md`. This file is the **consumer** guide. The sibling skill `raylib-hpp` covers the raylib side and is a prerequisite — most raygui examples touch both.
+The wrapper's own architecture lives at `deps/raygui-hpp/CLAUDE.md`. This file is the **consumer** guide. The sibling skill `raylib-hpp` covers the raylib side and is a prerequisite — most raygui examples touch both.
 
 ## How to bring raygui in
 
@@ -19,7 +19,7 @@ Three entry points, **one per TU** (don't mix):
 | `#include "raygui-hpp/raygui.hpp"` | Header form of the same surface | Pulls every `raygui-hpp/*.hpp`. Use in TUs that aren't using `import std;` for some reason. |
 | `#include "raygui-hpp/raygui_c.hpp"` | Need a raw C raygui function (`::GuiSetStyle`, `::GuiGetStyle`, `::GuiLoadStyle`, `::GuiLoadStyleDefault`) | Coexists with `import raygui;` — raygui.h has include guards. Brings the C declarations into the current TU. |
 
-The examples under `deps/Raygui-Hpp/examples/` show the common shape:
+The examples under `deps/raygui-hpp/examples/` show the common shape:
 
 ```cpp
 import std;
@@ -82,7 +82,7 @@ Most raygui controls return `int`, where 0 = "no event this frame" and any non-z
 - `Spinner`, `ValueBox`, `TextBox`, `DropdownBox` — return `1` when the user finishes editing (commit on Enter / click-outside); standard pattern is `if (...) edit_mode = !edit_mode;`
 - `MessageBox`, `TextInputBox` — return `1` / `2` for the buttons (Yes/No, Ok/Cancel), `0` for "still open"
 
-When in doubt, search the matching `::GuiXxx` in `deps/Raygui-Hpp/raygui.h` — the return-value semantics are documented at each declaration.
+When in doubt, search the matching `::GuiXxx` in `deps/raygui-hpp/raygui.h` — the return-value semantics are documented at each declaration.
 
 ## Calling raw raygui C functions
 
@@ -122,7 +122,7 @@ raygui keeps a lot of state inside its implementation TU (`raygui_impl.c`). None
 | `RAYGUI_WINDOWBOX_STATUSBAR_HEIGHT` | Hard-code `24` (its value) with a comment |
 | `RAYGUI_MALLOC` (needed by style headers, see below) | `#define RAYGUI_MALLOC(sz) malloc(sz)` etc. locally before including the style header |
 
-The "custom_sliders" and "property_list" example ports under `deps/Raygui-Hpp/examples/` are the canonical references for these workarounds.
+The "custom_sliders" and "property_list" example ports under `deps/raygui-hpp/examples/` are the canonical references for these workarounds.
 
 ## What you canNOT reach because the second `#include` is a no-op
 
@@ -167,7 +167,7 @@ The `<stdlib.h>` / `<string.h>` are C headers, not the libc++ `<cstdlib>` / `<cs
 
 raygui ships an embedded bitmap font baked at 10 px. With `FLAG_WINDOW_HIGHDPI` on (required on 4K displays so the UI isn't tiny — see the user-scope memory `window_hidpi_required.md`), raylib renders into a framebuffer at physical resolution and projects from logical coords; the projection's default bilinear filter turns the 10-px atlas into a blurry mess.
 
-`deps/Raygui-Hpp/examples/common/example_setup.hpp` provides the standard fix as `ck::gui_demo::SetupHiDpi()`. It:
+`deps/raygui-hpp/examples/common/example_setup.hpp` provides the standard fix as `ck::gui_demo::SetupHiDpi()`. It:
 
 1. Calls `::SetMouseScale(1/dpi.x, 1/dpi.y)` so mouse coords (returned physical) match the logical drawing space (raygui's hit-testing needs this).
 2. Generates mipmaps + sets `TEXTURE_FILTER_TRILINEAR` on `::GuiGetFont().texture` so the upsample is no longer pure bilinear.
@@ -186,7 +186,7 @@ For the main `block` app and any new app that needs a sharper font than the tril
 
 The module re-exports a curated subset. If `import raygui;` doesn't see the symbol you need:
 
-1. Check `deps/Raygui-Hpp/src/raygui.cppm` — is the symbol listed in a `using` declaration?
+1. Check `deps/raygui-hpp/src/raygui.cppm` — is the symbol listed in a `using` declaration?
 2. If not, find it in the matching `include/raygui-hpp/*.hpp` (or add a thin wrapper there following the pattern of the existing ones — `inline X Foo(...)` calling `::GuiFoo(...)`).
 3. Add `using ck::gui::Foo;` in the `ck::gui::` block at the bottom of `raygui.cppm`.
 4. Rebuild.

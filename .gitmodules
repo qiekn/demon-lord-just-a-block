@@ -11,6 +11,6 @@
 [submodule "deps/spdlog"]
 	path = deps/spdlog
 	url = https://github.com/gabime/spdlog.git
-[submodule "deps/Raygui-Hpp"]
-	path = deps/Raygui-Hpp
+[submodule "deps/raygui-hpp"]
+	path = deps/raygui-hpp
 	url = git@github.com:qiekn/Raygui-Hpp.git
